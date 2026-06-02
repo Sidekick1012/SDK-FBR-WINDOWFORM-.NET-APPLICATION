@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SDK_E_INVOICING_SYSTEM;
 using SDK_E_INVOICING_SYSTEM.Data;
@@ -113,13 +113,12 @@ public class GenerateInvoiceForm : Form
         mainLayout.Controls.Add(gbSeller);
         DataTable sellers = DatabaseHelper.GetSellers(); // make sure you have a GetSellers() method
 
-        cmbSellerName.DataSource = sellers;
         cmbSellerName.DisplayMember = "sellerBusinessName"; // column in DB
         cmbSellerName.ValueMember = "sellerId";
 
         cmbSellerName.SelectedIndexChanged += (s, e) =>
         {
-            if (cmbSellerName.SelectedIndex >= 0)
+            if (cmbSellerName.SelectedIndex >= 0 && sellers != null && sellers.Rows.Count > cmbSellerName.SelectedIndex)
             {
                 DataRow row = sellers.Rows[cmbSellerName.SelectedIndex];
                 txtSellerNTN.Text = row["sellerNTNCNIC"].ToString();
@@ -135,6 +134,8 @@ public class GenerateInvoiceForm : Form
                 sellerAddress = txtSellerAddress.Text;
             }
         };
+
+        cmbSellerName.DataSource = sellers;
 
         // Buyer Info
         GroupBox gbBuyer = CreateGroupBox("👤 Buyer Info", new Size(400, 180));
@@ -383,12 +384,11 @@ public class GenerateInvoiceForm : Form
 
         // Load Data
         buyers = DatabaseHelper.GetCustomers();
-        cmbBuyerName.DataSource = buyers;
         cmbBuyerName.DisplayMember = "customerBusinessName";
         cmbBuyerName.ValueMember = "customerId";
         cmbBuyerName.SelectedIndexChanged += (s, e) =>
         {
-            if (cmbBuyerName.SelectedIndex >= 0)
+            if (cmbBuyerName.SelectedIndex >= 0 && buyers != null && buyers.Rows.Count > cmbBuyerName.SelectedIndex)
             {
                 DataRow row = buyers.Rows[cmbBuyerName.SelectedIndex];
                 txtBuyerNTN.Text = row["customerNTNCNIC"].ToString();
@@ -397,15 +397,15 @@ public class GenerateInvoiceForm : Form
                 txtBuyerRegType.Text = row["registrationType"].ToString();
             }
         };
+        cmbBuyerName.DataSource = buyers;
 
         products = DatabaseHelper.GetProducts();
-        cmbHSCode.DataSource = products;
         // Show product description in dropdown; HS Code will appear in txtHSCode
         cmbHSCode.DisplayMember = "productDescription";
         cmbHSCode.ValueMember = "productId";
         cmbHSCode.SelectedIndexChanged += (s, e) =>
         {
-            if (cmbHSCode.SelectedIndex >= 0)
+            if (cmbHSCode.SelectedIndex >= 0 && products != null && products.Rows.Count > cmbHSCode.SelectedIndex)
             {
                 DataRow row = products.Rows[cmbHSCode.SelectedIndex];
                 // fill description textbox and HS code textbox
@@ -415,6 +415,7 @@ public class GenerateInvoiceForm : Form
                 txtProdUOM.Text = row["uoM"].ToString();
             }
         };
+        cmbHSCode.DataSource = products;
 
         // Events
         btnAddItem.Click += BtnAddItem_Click;
