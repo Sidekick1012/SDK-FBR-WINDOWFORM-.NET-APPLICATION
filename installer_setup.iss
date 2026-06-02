@@ -39,8 +39,8 @@ Source: "{#ProjectDir}\SDK-E-INVOICING-SYSTEM\bin\Release\SDK-E-INVOICING-SYSTEM
 ; Config file
 Source: "{#ProjectDir}\SDK-E-INVOICING-SYSTEM\bin\Release\SDK-E-INVOICING-SYSTEM.exe.config"; DestDir: "{app}"; Flags: ignoreversion
 
-; NOTE: Database (einvoice.db) is NOT installed here.
-; The app automatically creates it in %AppData%\SDKEInvoicing\ on first run.
+; Database - installed into AppData so seller data persists and is not overwritten on updates
+Source: "{#ProjectDir}\SDK-E-INVOICING-SYSTEM\bin\Release\einvoice.db"; DestDir: "{userappdata}\SDKEInvoicing"; Flags: ignoreversion onlyifdoesntexist
 
 ; Logo and images
 Source: "{#ProjectDir}\SDK-E-INVOICING-SYSTEM\bin\Release\*.png"; DestDir: "{app}"; Flags: ignoreversion
