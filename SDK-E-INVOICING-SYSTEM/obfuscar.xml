@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Obfuscator>
-  <Var name="InPath" value=".\bin\Release" />
-  <Var name="OutPath" value=".\bin\Release\Obfuscated" />
+  <Var name="InPath" value="c:\Users\PC\source\repos\SDK-E-INVOICING-SYSTEM\SDK-E-INVOICING-SYSTEM\bin\Release" />
+  <Var name="OutPath" value="c:\Users\PC\source\repos\SDK-E-INVOICING-SYSTEM\SDK-E-INVOICING-SYSTEM\bin\Release\Obfuscated" />
   
   <AssemblySearchPath path="C:\Windows\Microsoft.NET\Framework64\v4.0.30319" />
   <AssemblySearchPath path="C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2" />
