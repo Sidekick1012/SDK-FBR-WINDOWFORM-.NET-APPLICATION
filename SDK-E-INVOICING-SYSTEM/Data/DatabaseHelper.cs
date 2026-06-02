@@ -7,12 +7,57 @@ namespace SDK_E_INVOICING_SYSTEM.Data
 {
     public static class DatabaseHelper
     {
-        //public static readonly string ConnectionString = "Data Source=einvoice.db;Version=3;";
+        public static readonly string ConnectionString;
+        private static readonly string DbFolder;
 
-        private static readonly string DbFolder = AppDomain.CurrentDomain.BaseDirectory;
+        static DatabaseHelper()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            if (IsDirectoryWritable(baseDir))
+            {
+                DbFolder = baseDir;
+            }
+            else
+            {
+                DbFolder = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "SDKEInvoicing");
+                
+                try
+                {
+                    if (!System.IO.Directory.Exists(DbFolder))
+                        System.IO.Directory.CreateDirectory(DbFolder);
 
-        public static readonly string ConnectionString =
-    $"Data Source={System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "einvoice.db")};Version=3;";
+                    // Migrate database if it exists in baseDir but not in AppData
+                    string sourceDb = System.IO.Path.Combine(baseDir, "einvoice.db");
+                    string destDb = System.IO.Path.Combine(DbFolder, "einvoice.db");
+                    if (System.IO.File.Exists(sourceDb) && !System.IO.File.Exists(destDb))
+                    {
+                        System.IO.File.Copy(sourceDb, destDb, true);
+                    }
+                }
+                catch { }
+            }
+
+            ConnectionString = $"Data Source={System.IO.Path.Combine(DbFolder, "einvoice.db")};Version=3;";
+        }
+
+        private static bool IsDirectoryWritable(string dirPath)
+        {
+            try
+            {
+                if (!System.IO.Directory.Exists(dirPath))
+                    System.IO.Directory.CreateDirectory(dirPath);
+                string tempFile = System.IO.Path.Combine(dirPath, System.IO.Path.GetRandomFileName());
+                System.IO.File.WriteAllText(tempFile, "test");
+                System.IO.File.Delete(tempFile);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
 
         
