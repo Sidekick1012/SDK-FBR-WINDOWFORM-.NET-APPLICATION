@@ -9,6 +9,8 @@ namespace SDK_E_INVOICING_SYSTEM.Data
     {
         //public static readonly string ConnectionString = "Data Source=einvoice.db;Version=3;";
 
+        private static readonly string DbFolder = AppDomain.CurrentDomain.BaseDirectory;
+
         public static readonly string ConnectionString =
     $"Data Source={System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "einvoice.db")};Version=3;";
 
@@ -21,6 +23,10 @@ namespace SDK_E_INVOICING_SYSTEM.Data
         /// </summary>
         public static void InitializeDatabase()
         {
+            // Ensure the AppData folder exists before opening the database
+            if (!System.IO.Directory.Exists(DbFolder))
+                System.IO.Directory.CreateDirectory(DbFolder);
+
             using (var conn = new SQLiteConnection(ConnectionString))
 
             {
@@ -206,6 +212,58 @@ CREATE TABLE IF NOT EXISTS Payments (
     FOREIGN KEY(invoiceId) REFERENCES Invoices(invoiceId)
 );";
                 using (var cmd = new SQLiteCommand(createPayments, conn)) cmd.ExecuteNonQuery();
+            }
+
+            // Perform auto-backup
+            BackupDatabase();
+        }
+
+        public static void BackupDatabase()
+        {
+            try
+            {
+                // Source path (einvoice.db location)
+                string sourceFile = System.IO.Path.Combine(DbFolder, "einvoice.db");
+                if (!System.IO.File.Exists(sourceFile))
+                    return;
+
+                // Destination path (My Documents\SDKEInvoicing_Backups)
+                string backupFolder = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    "SDKEInvoicing_Backups");
+
+                // Ensure backup folder exists
+                if (!System.IO.Directory.Exists(backupFolder))
+                    System.IO.Directory.CreateDirectory(backupFolder);
+
+                // Check if we already backed up today to avoid redundancy
+                string todayString = DateTime.Now.ToString("yyyyMMdd");
+                string todayBackupFile = System.IO.Path.Combine(backupFolder, $"einvoice_backup_{todayString}.db");
+
+                if (!System.IO.File.Exists(todayBackupFile))
+                {
+                    // Copy file
+                    System.IO.File.Copy(sourceFile, todayBackupFile, true);
+
+                    // Clean up older backups (keep only last 10 backups)
+                    var files = System.IO.Directory.GetFiles(backupFolder, "einvoice_backup_*.db");
+                    if (files.Length > 10)
+                    {
+                        Array.Sort(files); // Sorts older dates first
+                        for (int i = 0; i < files.Length - 10; i++)
+                        {
+                            try
+                            {
+                                System.IO.File.Delete(files[i]);
+                            }
+                            catch { /* Ignore deletion errors */ }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Database backup failed: {ex.Message}");
             }
         }
 
