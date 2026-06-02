@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 //using LiveCharts;
 using System;
 using System.Net.Http;
@@ -181,14 +181,6 @@ public class FbrApiService
                         catch { }
                     }
                     catch { }
-
-                    // If unauthorized, give clear message (token likely expired)
-                    if (resp.StatusCode == HttpStatusCode.Unauthorized)
-                    {
-                        string msg = "401 Unauthorized - seller token may be invalid or expired. Please refresh token and retry.";
-                        SaveLog(msg);
-                        return (false, resp, msg);
-                    }
 
                     return (true, resp, null);
                 }
