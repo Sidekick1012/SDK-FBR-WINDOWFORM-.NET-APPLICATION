@@ -687,23 +687,54 @@ public class GenerateInvoiceForm : Form
         try
         {
             // Ensure SRO values are present for items with rates other than 18%
-
             if (!EnsureSroForItems(out string sroErr))
             {
                 MessageBox.Show($"⚠️ Validation blocked: {sroErr}", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+
+            // --- Pre-flight: Validate Seller NTN and Token ---
+            string currentNtn = txtSellerNTN.Text.Replace("-", "").Replace(" ", "").Trim();
+            string currentToken = (sellerToken ?? "").Trim();
+
+            if (string.IsNullOrWhiteSpace(currentNtn) || (currentNtn.Length != 7 && currentNtn.Length != 13))
+            {
+                MessageBox.Show(
+                    $"❌ Seller NTN/CNIC is invalid!\n\n" +
+                    $"Current value: \"{txtSellerNTN.Text}\"\n" +
+                    $"Digits (after removing hyphens/spaces): {currentNtn.Length}\n\n" +
+                    $"NTN must be exactly 7 digits, or CNIC must be exactly 13 digits.\n" +
+                    $"Please go to Seller Management and correct the NTN/CNIC.",
+                    "Invalid Seller NTN", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(currentToken))
+            {
+                MessageBox.Show(
+                    "❌ Seller API Token is empty!\n\n" +
+                    "Please go to Seller Management and enter the FBR Bearer Token for this seller.",
+                    "Missing Token", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // Show debug info so user can verify what is being sent
+            var confirm = MessageBox.Show(
+                $"📤 Sending to FBR with:\n\n" +
+                $"Seller NTN/CNIC: {currentNtn} ({currentNtn.Length} digits)\n" +
+                $"Token (first 20 chars): {currentToken.Substring(0, Math.Min(20, currentToken.Length))}...\n\n" +
+                $"Click OK to proceed.",
+                "Confirm API Call", MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
+            if (confirm != DialogResult.OK) return;
+
             btnValidateInvoice.Enabled = false;
             progressBar.Visible = true;
             this.UseWaitCursor = true;
 
             string jsonPayload = BuildInvoiceJson();
 
-            // Fetch token of the selected seller
-            // string sellerToken = GetSelectedSellerToken(); // Implement this method to return token
-
             var service = new FbrApiService();
-            string result = await service.ValidateInvoiceDataAsync(jsonPayload, sellerToken);
+            string result = await service.ValidateInvoiceDataAsync(jsonPayload, currentToken);
 
             ShowApiResponse("Validation", result);
         }
