@@ -208,7 +208,9 @@ public class SellerForm : Form
         if (!ValidateFields()) return;
         try
         {
-            DatabaseHelper.AddSeller(txtBusinessName.Text, txtNTNCNIC.Text, txtProvince.Text, txtAddress.Text, txtRegistrationType.Text, txtToken.Text, logoBytes, txtInvoiceFooter.Text);
+            string cleanNtn = txtNTNCNIC.Text.Replace("-", "").Replace(" ", "").Trim();
+            string cleanToken = txtToken.Text.Trim();
+            DatabaseHelper.AddSeller(txtBusinessName.Text.Trim(), cleanNtn, txtProvince.Text.Trim(), txtAddress.Text.Trim(), txtRegistrationType.Text.Trim(), cleanToken, logoBytes, txtInvoiceFooter.Text.Trim());
             LoadSellers();
             ClearFields();
         }
@@ -224,7 +226,9 @@ public class SellerForm : Form
         if (!ValidateFields()) return;
         try
         {
-            DatabaseHelper.UpdateSeller(selectedSellerId, txtBusinessName.Text, txtNTNCNIC.Text, txtProvince.Text, txtAddress.Text, txtRegistrationType.Text, txtToken.Text, logoBytes, txtInvoiceFooter.Text);
+            string cleanNtn = txtNTNCNIC.Text.Replace("-", "").Replace(" ", "").Trim();
+            string cleanToken = txtToken.Text.Trim();
+            DatabaseHelper.UpdateSeller(selectedSellerId, txtBusinessName.Text.Trim(), cleanNtn, txtProvince.Text.Trim(), txtAddress.Text.Trim(), txtRegistrationType.Text.Trim(), cleanToken, logoBytes, txtInvoiceFooter.Text.Trim());
             LoadSellers();
             ClearFields();
         }
@@ -298,6 +302,14 @@ public class SellerForm : Form
     {
         if (string.IsNullOrWhiteSpace(txtBusinessName.Text)) { MessageBox.Show("Business Name is required."); return false; }
         if (string.IsNullOrWhiteSpace(txtNTNCNIC.Text)) { MessageBox.Show("NTN/CNIC is required."); return false; }
+        
+        string cleanNtn = txtNTNCNIC.Text.Replace("-", "").Replace(" ", "").Trim();
+        if (cleanNtn.Length != 7 && cleanNtn.Length != 13)
+        {
+            MessageBox.Show("Seller NTN must be exactly 7 digits, or CNIC must be exactly 13 digits (numeric only with no spaces or hyphens).");
+            return false;
+        }
+
         if (string.IsNullOrWhiteSpace(txtProvince.Text)) { MessageBox.Show("Province is required."); return false; }
         if (string.IsNullOrWhiteSpace(txtAddress.Text)) { MessageBox.Show("Address is required."); return false; }
         if (string.IsNullOrWhiteSpace(txtRegistrationType.Text)) { MessageBox.Show("Registration Type is required."); return false; }
