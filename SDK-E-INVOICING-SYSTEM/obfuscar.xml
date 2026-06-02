@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Obfuscator>
-  <Var name="InPath" value="C:\Users\PC\source\repos\SDK-E-INVOICING-SYSTEM\SDK-E-INVOICING-SYSTEM\bin\Release" />
-  <Var name="OutPath" value="C:\Users\PC\source\repos\SDK-E-INVOICING-SYSTEM\SDK-E-INVOICING-SYSTEM\bin\Release\Obfuscated" />
+  <Var name="InPath" value=".\bin\Release" />
+  <Var name="OutPath" value=".\bin\Release\Obfuscated" />
+  
+  <AssemblySearchPath path="C:\Windows\Microsoft.NET\Framework64\v4.0.30319" />
+  <AssemblySearchPath path="C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2" />
+
   <Var name="KeepPublicApi" value="false" />
   <Var name="HidePrivateApi" value="true" />
   <Var name="RenameProperties" value="true" />
   <Var name="RenameEvents" value="true" />
   <Var name="RenameFields" value="true" />
   <Var name="UseUnicodeNames" value="true" />
+  <Var name="HideStrings" value="true" />
   <Var name="OptimizeMethods" value="true" />
   <Var name="SuppressIldasm" value="true" />
 
-  <!-- The primary executable to obfuscate -->
-  <AssemblySearchPath path="C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2" />
-  <AssemblySearchPath path="C:\Windows\Microsoft.NET\Framework64\v4.0.30319" />
   <Module file="$(InPath)\SDK-E-INVOICING-SYSTEM.exe" />
 </Obfuscator>
