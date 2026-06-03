@@ -8,7 +8,7 @@
 
   <Var name="KeepPublicApi" value="false" />
   <Var name="HidePrivateApi" value="true" />
-  <Var name="RenameProperties" value="true" />
+  <Var name="RenameProperties" value="false" />
   <Var name="RenameEvents" value="true" />
   <Var name="RenameFields" value="true" />
   <Var name="UseUnicodeNames" value="true" />
