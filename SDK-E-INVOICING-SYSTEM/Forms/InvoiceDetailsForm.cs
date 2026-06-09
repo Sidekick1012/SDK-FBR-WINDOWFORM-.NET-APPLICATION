@@ -1,4 +1,4 @@
-﻿using SDK_E_INVOICING_SYSTEM.Data;
+using SDK_E_INVOICING_SYSTEM.Data;
 using System;
 using System.Data;
 using System.Drawing;
@@ -24,7 +24,7 @@ namespace SDK_E_INVOICING_SYSTEM
         // Product Controls
         private ComboBox cmbProduct, cmbScenario, cmbSaleType;
         private TextBox txtProductCode, txtProductDescription, txtProductRate, txtProductUOM;
-        private TextBox txtQuantity, txtUnitPrice, txtTotalValue, txtValueExclGST, txtSalesTaxAmount, txtFurtherTaxAmount, txtItemNotes;
+        private TextBox txtQuantity, txtUnitPrice, txtDiscount, txtTotalValue, txtValueExclGST, txtSalesTaxAmount, txtFurtherTaxAmount, txtItemNotes;
 
         // Other Controls
         private Button btnAddItem, btnRemoveItem, btnUpdate;
@@ -130,7 +130,7 @@ namespace SDK_E_INVOICING_SYSTEM
 
         private void CreateInvoiceInfoPanel(FlowLayoutPanel mainLayout)
         {
-            var infoPanel = CreateGroupBox("🧾 Invoice Item Details", new Size(400, 350));
+            var infoPanel = CreateGroupBox("🧾 Invoice Item Details", new Size(400, 390));
 
             // Invoice Basic Info
             txtInvoiceNumber = CreateTextBox("", true);
@@ -151,6 +151,7 @@ namespace SDK_E_INVOICING_SYSTEM
             // Quantity and Pricing
             txtQuantity = CreateTextBox("1");
             txtUnitPrice = CreateTextBox("0.00");
+            txtDiscount = CreateTextBox("0.00");
             txtTotalValue = CreateTextBox("", true);
             txtValueExclGST = CreateTextBox("", true);
             txtSalesTaxAmount = CreateTextBox("", true);
@@ -172,12 +173,14 @@ namespace SDK_E_INVOICING_SYSTEM
 
             // Add numeric validation
             txtQuantity.KeyPress += NumericOnly_KeyPress;
-            txtUnitPrice.KeyPress += NumericOnly_KeyPress;
+            txtUnitPrice.KeyPress += DecimalTwoPlaces_KeyPress;
+            txtDiscount.KeyPress += DecimalTwoPlaces_KeyPress;
             txtItemNotes.KeyPress += Notes_KeyPress;
 
             // Add calculation events
             txtQuantity.TextChanged += RecalculateTotalValue;
             txtUnitPrice.TextChanged += RecalculateTotalValue;
+            txtDiscount.TextChanged += RecalculateTotalValue;
             txtProductRate.TextChanged += RecalculateTotalValue;
 
             AddLabeledControls(infoPanel,
@@ -188,6 +191,7 @@ namespace SDK_E_INVOICING_SYSTEM
                 ("Scenario:", cmbScenario),
                 ("Quantity:", txtQuantity),
                 ("Unit Price:", txtUnitPrice),
+                ("Discount:", txtDiscount),
                 ("Total Value:", txtTotalValue),
                 ("Excl GST:", txtValueExclGST),
                 ("Sales Tax:", txtSalesTaxAmount),
@@ -232,6 +236,7 @@ namespace SDK_E_INVOICING_SYSTEM
             dgvItems.Columns.Add("UnitPrice", "Unit Price");
             dgvItems.Columns.Add("Rate", "Rate (%)");
             dgvItems.Columns.Add("TotalValue", "Total Value");
+            dgvItems.Columns.Add("Discount", "Discount");
             dgvItems.Columns.Add("ValueExclGST", "Value Excl. GST");
             dgvItems.Columns.Add("SalesTaxAmount", "Sales Tax Amount");
             dgvItems.Columns.Add("FurtherTaxAmount", "Further Tax Amount");
@@ -454,6 +459,7 @@ namespace SDK_E_INVOICING_SYSTEM
                                     reader["unitPrice"] != DBNull.Value ? Convert.ToDecimal(reader["unitPrice"]) : 0m,
                                     reader["rate"]?.ToString() ?? "",
                                     reader["totalValues"] != DBNull.Value ? Convert.ToDecimal(reader["totalValues"]) : 0m,
+                                    reader["discount"] != DBNull.Value ? Convert.ToDecimal(reader["discount"]) : 0m,
                                     reader["valueSalesExcludingST"] != DBNull.Value ? Convert.ToDecimal(reader["valueSalesExcludingST"]) : 0m,
                                     reader["salesTaxApplicable"] != DBNull.Value ? Convert.ToDecimal(reader["salesTaxApplicable"]) : 0m,
                                     reader["furtherTax"] != DBNull.Value ? Convert.ToDecimal(reader["furtherTax"]) : 0m,
@@ -616,6 +622,7 @@ namespace SDK_E_INVOICING_SYSTEM
                 cmbProduct.Text = row.Cells["HSCode"].Value?.ToString();
                 txtQuantity.Text = row.Cells["Quantity"].Value?.ToString();
                 txtUnitPrice.Text = row.Cells["UnitPrice"].Value?.ToString();
+                txtDiscount.Text = row.Cells["Discount"].Value?.ToString();
                 txtProductRate.Text = row.Cells["Rate"].Value?.ToString();
                 txtTotalValue.Text = row.Cells["TotalValue"].Value?.ToString();
                 txtValueExclGST.Text = row.Cells["ValueExclGST"].Value?.ToString();
@@ -638,6 +645,7 @@ namespace SDK_E_INVOICING_SYSTEM
             row.Cells["UnitPrice"].Value = txtUnitPrice.Text;
             row.Cells["Rate"].Value = txtProductRate.Text;
             row.Cells["TotalValue"].Value = txtTotalValue.Text;
+            row.Cells["Discount"].Value = txtDiscount.Text;
             row.Cells["ValueExclGST"].Value = txtValueExclGST.Text;
             row.Cells["SalesTaxAmount"].Value = txtSalesTaxAmount.Text;
             row.Cells["FurtherTaxAmount"].Value = txtFurtherTaxAmount.Text;
@@ -649,6 +657,7 @@ namespace SDK_E_INVOICING_SYSTEM
         {
             txtQuantity.Clear();
             txtUnitPrice.Clear();
+            txtDiscount.Clear();
             txtTotalValue.Clear();
             txtValueExclGST.Clear();
             txtSalesTaxAmount.Clear();
@@ -683,11 +692,15 @@ namespace SDK_E_INVOICING_SYSTEM
                 decimal.TryParse(txtUnitPrice.Text, out decimal unitPrice) &&
                 decimal.TryParse(txtProductRate.Text.Replace("%", ""), out decimal rate))
             {
+                decimal.TryParse(txtDiscount.Text, out decimal discount);
                 decimal total = qty * unitPrice;
                 txtTotalValue.Text = total.ToString("N2");
 
-                decimal valueExclGST = total / (1 + rate / 100);
-                decimal salesTax = total - valueExclGST;
+                decimal discountedTotal = total - discount;
+                if (discountedTotal < 0) discountedTotal = 0;
+
+                decimal valueExclGST = discountedTotal / (1 + rate / 100);
+                decimal salesTax = discountedTotal - valueExclGST;
 
                 txtValueExclGST.Text = valueExclGST.ToString("N2");
                 txtSalesTaxAmount.Text = salesTax.ToString("N2");
@@ -700,13 +713,56 @@ namespace SDK_E_INVOICING_SYSTEM
             }
         }
 
-        // Validation Methods
+        // ✅ Allow only numbers + control keys
         private void NumericOnly_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && e.KeyChar != '.')
             {
                 e.Handled = true;
             }
+        }
+
+        // ✅ Allow decimal numbers with max 2 decimal places (e.g. 100.87)
+        private void DecimalTwoPlaces_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (char.IsControl(e.KeyChar)) return;
+
+            TextBox tb = sender as TextBox;
+            string currentText = tb.Text;
+
+            // Allow only one decimal point
+            if (e.KeyChar == '.')
+            {
+                e.Handled = currentText.Contains('.');
+                return;
+            }
+
+            // Allow digits, but limit to 2 places after decimal
+            if (char.IsDigit(e.KeyChar))
+            {
+                int dotIndex = currentText.IndexOf('.');
+                if (dotIndex >= 0)
+                {
+                    string afterDot = currentText.Substring(dotIndex + 1);
+                    int selStart = tb.SelectionStart;
+                    int selLen = tb.SelectionLength;
+                    if (selStart > dotIndex)
+                    {
+                        int removeFrom = selStart - dotIndex - 1;
+                        int removeCount = Math.Min(selLen, afterDot.Length - removeFrom);
+                        if (removeCount > 0)
+                            afterDot = afterDot.Remove(removeFrom, removeCount);
+                    }
+                    if (afterDot.Length >= 2)
+                    {
+                        e.Handled = true;
+                        return;
+                    }
+                }
+                return;
+            }
+
+            e.Handled = true;
         }
 
         private void Notes_KeyPress(object sender, KeyPressEventArgs e)
@@ -826,6 +882,8 @@ namespace SDK_E_INVOICING_SYSTEM
                                         decimal quantity = Convert.ToDecimal(row.Cells["Quantity"].Value);
                                         decimal unitPrice = Convert.ToDecimal(row.Cells["UnitPrice"].Value);
                                         decimal totalAmount = Convert.ToDecimal(row.Cells["TotalValue"].Value);
+                                        decimal discount = Convert.ToDecimal(row.Cells["Discount"].Value ?? 0);
+                                        decimal valueExclGST = Convert.ToDecimal(row.Cells["ValueExclGST"].Value ?? 0);
                                         decimal salesTax = Convert.ToDecimal(row.Cells["SalesTaxAmount"].Value);
                                         decimal furtherTax = Convert.ToDecimal(row.Cells["FurtherTaxAmount"].Value);
 
@@ -837,14 +895,14 @@ namespace SDK_E_INVOICING_SYSTEM
                                             productRow.Field<string>("rate"),
                                             unitPrice,
                                             totalAmount,
-                                            totalAmount, // valueSalesExcludingST
-                                            totalAmount, // fixedNotifiedValueOrRetailPrice
-                                            salesTax, // salesTaxApplicable
-                                            0, // salesTaxWithheldAtSource
-                                            0, // extraTax
-                                            furtherTax, // furtherTax
-                                            0, // fedPayable
-                                            0, // discount
+                                            valueExclGST, // valueSalesExcludingST (excl. GST)
+                                            totalAmount,  // fixedNotifiedValueOrRetailPrice
+                                            salesTax,     // salesTaxApplicable
+                                            0,            // salesTaxWithheldAtSource
+                                            0,            // extraTax
+                                            furtherTax,   // furtherTax
+                                            0,            // fedPayable
+                                            discount,     // discount (actual value from grid)
                                             row.Cells["saleType"].Value?.ToString() ?? "Standard",
                                             "", // sroItemSerialNo
                                             ""  // sroScheduleNo

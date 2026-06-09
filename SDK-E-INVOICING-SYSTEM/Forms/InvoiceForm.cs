@@ -21,7 +21,7 @@ public class GenerateInvoiceForm : Form
     private TextBox txtHSCode;
     private TextBox txtQuantity, txtTotalValue, txtValueExclGST;
     private TextBox txtSalesTaxAmount, txtFurtherTaxAmount, txtExtraTaxAmount;
-    private TextBox txtUnitPrice;
+    private TextBox txtUnitPrice, txtDiscount;
     private ComboBox cmbSroSchedule; // SRO schedule dropdown
     private ComboBox cmbSroItemSerialNo; // SRO item serial no dropdown
     private TextBox txtItemNotes; // New Notes field
@@ -164,7 +164,7 @@ public class GenerateInvoiceForm : Form
         mainLayout.Controls.Add(gbProduct);
 
         // Invoice Item Panel
-        GroupBox gbItem = CreateGroupBox("🧾 Invoice Item", new Size(330, 360));
+        GroupBox gbItem = CreateGroupBox("🧾 Invoice Item", new Size(330, 390));
 
         cmbScenario = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 180 };
         cmbScenario.Items.Add("Select");
@@ -201,6 +201,7 @@ public class GenerateInvoiceForm : Form
 
         txtQuantity = CreateTextBox();
         txtUnitPrice = CreateTextBox();
+        txtDiscount = CreateTextBox();
         // SRO schedule dropdown (empty + two options)
         cmbSroSchedule = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 180 };
         cmbSroSchedule.Items.Add(string.Empty);
@@ -232,9 +233,11 @@ public class GenerateInvoiceForm : Form
         txtItemNotes = CreateTextBox(); // Notes field
         txtQuantity.TextChanged += RecalculateTotalValue;
         txtUnitPrice.TextChanged += RecalculateTotalValue;
+        txtDiscount.TextChanged += RecalculateTotalValue;
         // ✅ Numbers only
         txtQuantity.KeyPress += NumericOnly_KeyPress;
-        txtUnitPrice.KeyPress += NumericOnly_KeyPress;
+        txtUnitPrice.KeyPress += DecimalTwoPlaces_KeyPress;
+        txtDiscount.KeyPress += DecimalTwoPlaces_KeyPress;
         txtSalesTaxAmount.KeyPress += NumericOnly_KeyPress;
         txtFurtherTaxAmount.KeyPress += NumericOnly_KeyPress;
         txtValueExclGST.KeyPress += NumericOnly_KeyPress;
@@ -271,6 +274,7 @@ public class GenerateInvoiceForm : Form
             ("Scenario:", cmbScenario),
             ("Quantity:", txtQuantity),
             ("Unit Price:", txtUnitPrice),
+            ("Discount:", txtDiscount),
             // ("Invoice Date:", dtInvoiceDate),
             ("Total Value:", txtTotalValue),
             ("Excl GST:", txtValueExclGST),
@@ -313,6 +317,7 @@ public class GenerateInvoiceForm : Form
         dgvItems.Columns.Add("UnitPrice", "Unit Price");
         dgvItems.Columns.Add("Rate", "Rate (%)");
         dgvItems.Columns.Add("TotalValue", "Total Value");
+        dgvItems.Columns.Add("Discount", "Discount");
         dgvItems.Columns.Add("ValueExclGST", "Value Excl. GST");
         dgvItems.Columns.Add("SalesTaxAmount", "Sales Tax Amount");
         dgvItems.Columns.Add("FurtherTaxAmount", "Further Tax Amount");
@@ -366,6 +371,7 @@ public class GenerateInvoiceForm : Form
         // Save button is removed; nothing to enable/disable
         txtQuantity.TextChanged += RecalculateSalesTax;
         txtUnitPrice.TextChanged += RecalculateSalesTax;
+        txtDiscount.TextChanged += RecalculateSalesTax;
         txtProdRate.TextChanged += RecalculateSalesTax;
 
         gbGrid.Controls.Add(gridButtons);
@@ -475,6 +481,7 @@ public class GenerateInvoiceForm : Form
 
             txtQuantity.Text = row.Cells["Quantity"].Value?.ToString();
             txtUnitPrice.Text = row.Cells["UnitPrice"].Value?.ToString();
+            txtDiscount.Text = row.Cells["Discount"].Value?.ToString();
             //dtInvoiceDate.Value = DateTime.TryParse(row.Cells["InvoiceDate"].Value?.ToString(), out DateTime d) ? d : DateTime.Today;
             txtProdRate.Text = row.Cells["Rate"].Value?.ToString();
             txtTotalValue.Text = row.Cells["TotalValue"].Value?.ToString();
@@ -525,6 +532,7 @@ public class GenerateInvoiceForm : Form
         row.Cells["UOM"].Value = txtProdUOM.Text;
         row.Cells["Quantity"].Value = txtQuantity.Text;
         row.Cells["UnitPrice"].Value = txtUnitPrice.Text;
+        row.Cells["Discount"].Value = txtDiscount.Text;
         // row.Cells["InvoiceDate"].Value = dtInvoiceDate.Value.ToShortDateString();
         row.Cells["Rate"].Value = txtProdRate.Text;
         row.Cells["TotalValue"].Value = txtTotalValue.Text;
@@ -546,6 +554,7 @@ public class GenerateInvoiceForm : Form
     {
         txtQuantity.Clear();
         txtUnitPrice.Clear();
+        txtDiscount.Clear();
         txtTotalValue.Clear();
         txtValueExclGST.Clear();
         txtSalesTaxAmount.Clear();
@@ -626,6 +635,51 @@ public class GenerateInvoiceForm : Form
         }
     }
 
+    // ✅ Allow decimal numbers with max 2 decimal places (e.g. 100.87)
+    private void DecimalTwoPlaces_KeyPress(object sender, KeyPressEventArgs e)
+    {
+        if (char.IsControl(e.KeyChar)) return; // allow Backspace etc.
+
+        TextBox tb = sender as TextBox;
+        string currentText = tb.Text;
+
+        // Allow only one decimal point
+        if (e.KeyChar == '.')
+        {
+            e.Handled = currentText.Contains('.');
+            return;
+        }
+
+        // Allow digits, but limit to 2 places after decimal
+        if (char.IsDigit(e.KeyChar))
+        {
+            int dotIndex = currentText.IndexOf('.');
+            if (dotIndex >= 0)
+            {
+                // Count digits after decimal point (excluding selected text that will be replaced)
+                string afterDot = currentText.Substring(dotIndex + 1);
+                // Remove selected portion from afterDot calculation
+                int selStart = tb.SelectionStart;
+                int selLen = tb.SelectionLength;
+                if (selStart > dotIndex)
+                {
+                    int removeFrom = selStart - dotIndex - 1;
+                    int removeCount = Math.Min(selLen, afterDot.Length - removeFrom);
+                    if (removeCount > 0)
+                        afterDot = afterDot.Remove(removeFrom, removeCount);
+                }
+                if (afterDot.Length >= 2)
+                {
+                    e.Handled = true; // max 2 decimal places
+                    return;
+                }
+            }
+            return;
+        }
+
+        e.Handled = true; // block all other chars
+    }
+
     // ✅ Allow only letters, numbers, space, and basic symbols (alphanumeric for Notes)
     private void Notes_KeyPress(object sender, KeyPressEventArgs e)
     {
@@ -643,11 +697,15 @@ public class GenerateInvoiceForm : Form
             decimal.TryParse(txtUnitPrice.Text, out decimal unitPrice) &&
             decimal.TryParse(txtProdRate.Text, out decimal rate)) // Rate in %
         {
+            decimal.TryParse(txtDiscount.Text, out decimal discount);
             decimal total = qty * unitPrice;
             txtTotalValue.Text = total.ToString("N2");
 
-            decimal valueExclGST = total / (1 + rate / 100);
-            decimal salesTax = total - valueExclGST;
+            decimal discountedTotal = total - discount;
+            if (discountedTotal < 0) discountedTotal = 0;
+
+            decimal valueExclGST = discountedTotal / (1 + rate / 100);
+            decimal salesTax = discountedTotal - valueExclGST;
 
             txtValueExclGST.Text = valueExclGST.ToString("N2");
             txtSalesTaxAmount.Text = salesTax.ToString("N2");
@@ -857,6 +915,7 @@ public class GenerateInvoiceForm : Form
                         decimal valueExcl = Convert.ToDecimal(row.Cells["ValueExclGST"].Value ?? 0m);
                         decimal salesTax = Convert.ToDecimal(row.Cells["SalesTaxAmount"].Value ?? 0m);
                         decimal further = Convert.ToDecimal(row.Cells["FurtherTaxAmount"].Value ?? 0m);
+                        decimal discountVal = Convert.ToDecimal(row.Cells["Discount"].Value ?? 0m);
                         string saleType = row.Cells["saleType"].Value?.ToString() ?? "Goods at standard rate";
                         string sroSerial = row.Cells["sroItemSerialNo"]?.Value?.ToString() ?? "";
                         string sroSched = row.Cells["sroScheduleNo"]?.Value?.ToString() ?? "";
@@ -876,7 +935,7 @@ public class GenerateInvoiceForm : Form
                             0m,
                             further,
                             0m,
-                            0m,
+                            discountVal,
                             saleType,
                             sroSerial,
                             sroSched
@@ -957,6 +1016,7 @@ public class GenerateInvoiceForm : Form
             decimal valueSalesExcludingST = Convert.ToDecimal(row.Cells["ValueExclGST"].Value ?? 0m);
             decimal salesTaxApplicable = Convert.ToDecimal(row.Cells["SalesTaxAmount"].Value ?? 0m);
             decimal furtherTax = Convert.ToDecimal(row.Cells["FurtherTaxAmount"].Value ?? 0m);
+            decimal discount = Convert.ToDecimal(row.Cells["Discount"].Value ?? 0m);
 
             // Prefer grid cell value for SRO schedule, fallback to UI dropdown
             string sroSchedule = row.Cells["sroScheduleNo"]?.Value?.ToString();
@@ -980,7 +1040,7 @@ public class GenerateInvoiceForm : Form
                 extraTax = "0",
                 furtherTax = furtherTax,
                 fedPayable = 0.00m,
-                discount = 0.00m,
+                discount = discount,
 
                 saleType = row.Cells["saleType"].Value?.ToString() ?? "Goods at standard rate",
                 sroScheduleNo = sroSchedule ?? "",
@@ -1050,11 +1110,12 @@ public class GenerateInvoiceForm : Form
 
     private void RecalculateSalesTax(object sender, EventArgs e)
     {
-        decimal qty = 0, unitPrice = 0, rate = 0;
+        decimal qty = 0, unitPrice = 0, rate = 0, discount = 0;
 
-        // Qty aur UnitPrice parse karo
+        // Qty, UnitPrice, and Discount parse karo
         decimal.TryParse(txtQuantity.Text, out qty);
         decimal.TryParse(txtUnitPrice.Text, out unitPrice);
+        decimal.TryParse(txtDiscount.Text, out discount);
 
         // Rate textbox se % remove karke number nikaal lo
         string rateText = txtProdRate.Text.Replace("%", "").Trim();
@@ -1067,25 +1128,27 @@ public class GenerateInvoiceForm : Form
         // 2️⃣ Scenario Code ke hisaab se Sales Tax calculate karo
         string scenarioCode = cmbScenario.SelectedItem?.ToString() ?? "DEFAULT";
         decimal salesTax = 0;
-        decimal valueExclGST = totalValue;
+        decimal discountedValue = totalValue - discount;
+        if (discountedValue < 0) discountedValue = 0;
+        decimal valueExclGST = discountedValue;
 
         switch (scenarioCode)
         {
             case "SN001": // Scenario 1: Standard Product (Rate from product)
                           // Inclusive nahi, simple % tax
-                salesTax = totalValue * rate / 100;
-                valueExclGST = totalValue;
+                salesTax = discountedValue * rate / 100;
+                valueExclGST = discountedValue;
                 break;
 
             case "SN002": // Scenario 2: Services (Rate from product)
                           // Agar inclusive GST ho to:
-                valueExclGST = totalValue / (1 + rate / 100);
-                salesTax = totalValue - valueExclGST;
+                valueExclGST = discountedValue / (1 + rate / 100);
+                salesTax = discountedValue - valueExclGST;
                 break;
 
             default: // Fallbacka
-                salesTax = totalValue * rate / 100;
-                valueExclGST = totalValue;
+                salesTax = discountedValue * rate / 100;
+                valueExclGST = discountedValue;
                 break;
         }
 

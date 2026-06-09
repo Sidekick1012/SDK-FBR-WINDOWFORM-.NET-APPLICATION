@@ -129,16 +129,23 @@ public class InvoicePreviewForm : Form
         pnlInvoice = new Panel
         {
             Name = "pnlInvoice",
-            Width = 920,
+            Width = Math.Max(900, this.ClientSize.Width - 100),
             BackColor = Color.White,
             BorderStyle = BorderStyle.None,
-            Location = new Point((this.ClientSize.Width - 920) / 2, 70),
-            Padding = new Padding(40, 20, 40, 30),
+            Location = new Point(50, 70),
+            Padding = new Padding(30, 20, 30, 30),
             AutoScroll = false,
             AutoSize = false
         };
 
         this.Controls.Add(pnlInvoice);
+
+        // Re-center panel on resize
+        this.Resize += (s, e) =>
+        {
+            pnlInvoice.Width = Math.Max(900, this.ClientSize.Width - 100);
+            pnlInvoice.Location = new Point((this.ClientSize.Width - pnlInvoice.Width) / 2, 70);
+        };
 
         // ===== MAIN LAYOUT PANEL =====
         mainPanel = new TableLayoutPanel
@@ -210,25 +217,25 @@ public class InvoicePreviewForm : Form
 
         lblInvoiceNumber = new Label
         {
-            Font = new Font("Segoe UI", 11, FontStyle.Bold),
+            Font = new Font("Segoe UI", 14, FontStyle.Bold),
             AutoSize = true,
             Margin = new Padding(0, 0, 0, 5)
         };
         lblFbrNumber = new Label
         {
-            Font = new Font("Segoe UI", 10),
+            Font = new Font("Segoe UI", 12),
             AutoSize = true,
             Margin = new Padding(0, 0, 0, 5)
         };
         lblDate = new Label
         {
-            Font = new Font("Segoe UI", 10),
+            Font = new Font("Segoe UI", 12),
             AutoSize = true,
             Margin = new Padding(0, 0, 0, 5)
         };
         lblStatus = new Label
         {
-            Font = new Font("Segoe UI", 10, FontStyle.Italic),
+            Font = new Font("Segoe UI", 12, FontStyle.Italic),
             AutoSize = true,
             ForeColor = Color.DarkGreen,
             Margin = new Padding(0, 0, 0, 5)
@@ -285,7 +292,7 @@ public class InvoicePreviewForm : Form
         var topNoticeLabel = new Label
         {
             Text = "This is a computer generated invoice. No signature or stamp required.",
-            Font = new Font("Segoe UI", 9f, FontStyle.Italic),
+            Font = new Font("Segoe UI", 10.5f, FontStyle.Italic),
             ForeColor = Color.FromArgb(100, 100, 100),
             AutoSize = true,
             Height = 24,
@@ -327,7 +334,7 @@ public class InvoicePreviewForm : Form
         {
             Text = "Seller Information",
             Dock = DockStyle.Fill,
-            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            Font = new Font("Segoe UI", 12, FontStyle.Bold),
             Padding = new Padding(10),
             ForeColor = Color.FromArgb(30, 60, 114),
             Height = 180
@@ -336,7 +343,7 @@ public class InvoicePreviewForm : Form
         lblSellerInfo = new Label
         {
             AutoSize = true,
-            Font = new Font("Segoe UI", 9.5f),
+            Font = new Font("Segoe UI", 11.5f),
             MaximumSize = new Size(350, 0),
             TextAlign = ContentAlignment.TopLeft,
             Dock = DockStyle.Fill
@@ -351,7 +358,7 @@ public class InvoicePreviewForm : Form
         {
             Text = "Buyer Information",
             Dock = DockStyle.Fill,
-            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            Font = new Font("Segoe UI", 12, FontStyle.Bold),
             Padding = new Padding(10),
             ForeColor = Color.FromArgb(30, 60, 114),
             Height = 180
@@ -360,7 +367,7 @@ public class InvoicePreviewForm : Form
         lblCustomerInfo = new Label
         {
             AutoSize = true,
-            Font = new Font("Segoe UI", 9.5f),
+            Font = new Font("Segoe UI", 11.5f),
             MaximumSize = new Size(350, 0),
             TextAlign = ContentAlignment.TopLeft,
             Dock = DockStyle.Fill
@@ -400,28 +407,32 @@ public class InvoicePreviewForm : Form
             null, dgvItems, new object[] { true });
 
         // ===== HEADER STYLE =====
-        dgvItems.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 10.5f);
+        dgvItems.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 12f);
         dgvItems.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
         dgvItems.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(245, 245, 245);
         dgvItems.ColumnHeadersDefaultCellStyle.ForeColor = Color.Black;
+        dgvItems.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.True;
 
         // ===== CELL STYLE =====
-        dgvItems.DefaultCellStyle.Font = new Font("Segoe UI", 10f);
-        dgvItems.DefaultCellStyle.Padding = new Padding(8, 8, 8, 8);
+        dgvItems.DefaultCellStyle.Font = new Font("Segoe UI", 12f);
+        dgvItems.DefaultCellStyle.Padding = new Padding(5, 6, 5, 6);
         dgvItems.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
         dgvItems.DefaultCellStyle.BackColor = Color.White;
         dgvItems.DefaultCellStyle.SelectionBackColor = Color.White;
         dgvItems.DefaultCellStyle.SelectionForeColor = Color.Black;
         dgvItems.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 248, 248);
 
+        // ===== HEADER WRAPPING =====
+        dgvItems.ColumnHeadersHeight = 44;
+
         // ===== COLUMNS =====
-        dgvItems.Columns.Add("hsCode", "Item Code");
+        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "hsCode", HeaderText = "Item Code", FillWeight = 75 });
 
         var descCol = new DataGridViewTextBoxColumn
         {
             Name = "productDescription",
             HeaderText = "Item Description",
-            FillWeight = 230,
+            FillWeight = 200,
             DefaultCellStyle = new DataGridViewCellStyle
             {
                 WrapMode = DataGridViewTriState.True,
@@ -430,12 +441,14 @@ public class InvoicePreviewForm : Form
         };
         dgvItems.Columns.Add(descCol);
 
-        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "unitPrice", HeaderText = "Unit Price", FillWeight = 90 });
-        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "quantity", HeaderText = "Qty", FillWeight = 60 });
-        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalEx", HeaderText = "Amount (Excl. S.Tax)", FillWeight = 130 });
-        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "rate", HeaderText = "Sales Tax %", FillWeight = 80 });
-        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TaxValue", HeaderText = "Sales Tax Value", FillWeight = 130 });
-        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalInc", HeaderText = "Amount (Incl. S.Tax)", FillWeight = 140 });
+        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "unitPrice",  HeaderText = "Unit\nPrice",            FillWeight = 75 });
+        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "quantity",   HeaderText = "Qty",                    FillWeight = 40 });
+        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalGross", HeaderText = "Gross\nValue",           FillWeight = 90 });
+        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "discount",   HeaderText = "Discount",               FillWeight = 75 });
+        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalEx",    HeaderText = "Amt Excl.\nS.Tax",       FillWeight = 95 });
+        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "rate",       HeaderText = "Tax\n%",                 FillWeight = 45 });
+        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TaxValue",   HeaderText = "Sales Tax\nValue",       FillWeight = 95 });
+        dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalInc",   HeaderText = "Amt Incl.\nS.Tax",       FillWeight = 95 });
 
         // ===== ALIGNMENT =====
         foreach (DataGridViewColumn col in dgvItems.Columns)
@@ -465,7 +478,7 @@ public class InvoicePreviewForm : Form
             return new Label
             {
                 Text = text,
-                Font = new Font("Segoe UI", bold ? 10.5f : 10f, bold ? FontStyle.Bold : FontStyle.Regular),
+                Font = new Font("Segoe UI", bold ? 13f : 12f, bold ? FontStyle.Bold : FontStyle.Regular),
                 TextAlign = ContentAlignment.MiddleRight,
                 Dock = DockStyle.Fill,
                 AutoSize = true,
@@ -493,7 +506,7 @@ public class InvoicePreviewForm : Form
         computerGeneratedLabel = new Label
         {
             Text = "This is a computer generated invoice. No signature or stamp required.",
-            Font = new Font("Segoe UI", 8f, FontStyle.Italic),
+            Font = new Font("Segoe UI", 10f, FontStyle.Italic),
             ForeColor = Color.FromArgb(100, 100, 100),
             AutoSize = false,
             Height = 22,
@@ -537,7 +550,7 @@ public class InvoicePreviewForm : Form
         footerTextLabel = new Label
         {
             Text = "Phone: +92 51 6144660 | Mobile: +92 300 230 2463, +92 332 5494660 | Email: usmanenterprises63@gmail.com",
-            Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
+            Font = new Font("Segoe UI", 11f, FontStyle.Regular),
             ForeColor = Color.FromArgb(120, 120, 120),
             Dock = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleCenter,
@@ -555,7 +568,7 @@ public class InvoicePreviewForm : Form
          {
              // Ensure the exact requested wording is shown on the invoice
              Text = "This is a computer generated invoice. No signature or stamp required.",
-             Font = new Font("Segoe UI", 8f, FontStyle.Italic),
+             Font = new Font("Segoe UI", 10f, FontStyle.Italic),
              ForeColor = Color.FromArgb(100, 100, 100),
              Dock = DockStyle.Bottom,
              Height = 40,
@@ -652,6 +665,9 @@ public class InvoicePreviewForm : Form
                 bool hasRate = items.Columns.Contains("rate");
                 decimal rate = hasRate ? ParseDecimal(row["rate"]) : 0m;
 
+                bool hasDiscount = items.Columns.Contains("discount");
+                decimal discount = hasDiscount ? ParseDecimal(row["discount"]) : 0m;
+
                 string description = "";
                 if (row["description"] != DBNull.Value && !string.IsNullOrWhiteSpace(row["description"].ToString()))
                 {
@@ -665,7 +681,9 @@ public class InvoicePreviewForm : Form
                 bool hasFurtherTax = items.Columns.Contains("furtherTax");
                 decimal further = hasFurtherTax ? ParseDecimal(row["furtherTax"]) : 0m;
 
-                decimal totalEx = qty * unitPrice;
+                decimal totalGross = qty * unitPrice;
+                decimal totalEx = totalGross - discount;
+                if (totalEx < 0m) totalEx = 0m;
                 decimal taxValue = totalEx * rate / 100m;
                 decimal totalInc = totalEx + taxValue;
 
@@ -679,6 +697,8 @@ public class InvoicePreviewForm : Form
                     description,
                     unitPrice,
                     qty,
+                    totalGross,
+                    discount,
                     totalEx,
                     rate,
                     taxValue,
@@ -1406,7 +1426,36 @@ public class InvoicePreviewForm : Form
                         bool prevFooterVisible = footerPanel?.Visible ?? false;
                         try
                         {
-                            captured = CaptureInvoiceBitmap();
+                            // ── PDF CAPTURE: temporarily shrink panel to fixed width for good PDF scale ──
+                            int prevPanelWidth = pnlInvoice.Width;
+                            const int PDF_CAPTURE_WIDTH = 870;
+                            try
+                            {
+                                pnlInvoice.SuspendLayout();
+                                mainPanel.SuspendLayout();
+                                pnlInvoice.Width = PDF_CAPTURE_WIDTH;
+                                mainPanel.ResumeLayout(true);
+                                pnlInvoice.ResumeLayout(true);
+                                AdjustInvoiceHeight();
+                                Application.DoEvents();
+                                Application.DoEvents();
+                                footerPanel.Visible = false;
+                                captured = CaptureInvoiceBitmap();
+                            }
+                            finally
+                            {
+                                // Always restore panel width
+                                footerPanel.Visible = prevFooterVisible;
+                                pnlInvoice.SuspendLayout();
+                                mainPanel.SuspendLayout();
+                                pnlInvoice.Width = prevPanelWidth;
+                                mainPanel.ResumeLayout(true);
+                                pnlInvoice.ResumeLayout(true);
+                                AdjustInvoiceHeight();
+                                Application.DoEvents();
+                            }
+                            // ──────────────────────────────────────────────────────────────────────────
+
                             if (captured == null)
                             {
                                 ShowErrorMessage("Failed to capture invoice for PDF generation");
@@ -1468,8 +1517,8 @@ public class InvoicePreviewForm : Form
             // A4 dimensions in points
             double pageWidth = 595.0;
             double pageHeight = 842.0;
-            double margin = 50;
-            double availableHeight = pageHeight - (2 * margin) - 60; // Reserve space for footer
+            double margin = 18;
+            double availableHeight = pageHeight - (2 * margin) - 50; // Reserve space for footer
 
             // Calculate scale
             double scale = (pageWidth - (2 * margin)) / invoiceBitmap.Width;
