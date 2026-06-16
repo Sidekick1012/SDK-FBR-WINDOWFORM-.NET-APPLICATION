@@ -3,7 +3,7 @@
 
 #define AppName "SDK E-Invoicing System"
 #define AppVersion "1.0.0"
-#define AppPublisher "Hybrid Engineering SMC Private Limited"
+#define AppPublisher "HCR"
 #define AppExeName "SDK-E-INVOICING-SYSTEM.exe"
 #define ProjectDir "c:\Users\PC\source\repos\SDK-E-INVOICING-SYSTEM"
 
