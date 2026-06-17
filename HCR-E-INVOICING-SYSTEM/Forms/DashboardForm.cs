@@ -1,5 +1,5 @@
-using InvoiceApp;
-using SDK_E_INVOICING_SYSTEM.Data;
+﻿using InvoiceApp;
+using HCR_E_INVOICING_SYSTEM.Data;
 using System;
 using System.Data;
 using System.Data.SQLite;
@@ -7,7 +7,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.IO;
 
-namespace SDK_E_INVOICING_SYSTEM
+namespace HCR_E_INVOICING_SYSTEM
 {
     public class DashboardForm : Form
     {
@@ -16,6 +16,7 @@ namespace SDK_E_INVOICING_SYSTEM
         private Label lblTotalCustomers, lblTotalProducts, lblPostedInvoices, lblPendingInvoices, lblPendingPayments, lblTotalSellers;
         private SalesTrendChart trendChart;
         private InvoiceStatusChart statusChart;
+        private bool _loggingOut = false;
 
 
         public DashboardForm()
@@ -137,117 +138,7 @@ namespace SDK_E_INVOICING_SYSTEM
             };
             this.Controls.Add(mainPanel);
 
-            // ===== Global Search Bar (Top of main panel) =====
-            Panel searchBarPanel = new Panel()
-            {
-                Height = 50,
-                Dock = DockStyle.Top,
-                BackColor = Color.Transparent,
-                Padding = new Padding(0, 5, 0, 5)
-            };
 
-            Panel searchBox = new Panel()
-            {
-                Height = 38,
-                Width = 450,
-                BackColor = Color.White,
-                Anchor = AnchorStyles.None,
-                Location = new Point(0, 6)
-            };
-            searchBox.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, 450, 38, 10, 10));
-            searchBox.Paint += (s, e2) =>
-            {
-                using (var pen = new System.Drawing.Pen(ColorTranslator.FromHtml("#D0D7E2"), 1))
-                    e2.Graphics.DrawRectangle(pen, 0, 0, searchBox.Width - 1, searchBox.Height - 1);
-            };
-
-            Label lblSearchIcon = new Label()
-            {
-                Text = "🔍",
-                Font = new Font("Segoe UI Emoji", 12),
-                Location = new Point(8, 6),
-                AutoSize = true,
-                BackColor = Color.Transparent
-            };
-
-            TextBox txtGlobalSearch = new TextBox()
-            {
-                Font = new Font("Segoe UI", 11),
-                Location = new Point(36, 8),
-                Width = 370,
-                BorderStyle = BorderStyle.None,
-                BackColor = Color.White,
-                ForeColor = Color.Gray,
-                Text = "Search customers, products, invoices..."
-            };
-            txtGlobalSearch.GotFocus += (s, e2) =>
-            {
-                if (txtGlobalSearch.Text == "Search customers, products, invoices...")
-                {
-                    txtGlobalSearch.Text = "";
-                    txtGlobalSearch.ForeColor = Color.FromArgb(30, 30, 60);
-                }
-            };
-            txtGlobalSearch.LostFocus += (s, e2) =>
-            {
-                if (string.IsNullOrWhiteSpace(txtGlobalSearch.Text))
-                {
-                    txtGlobalSearch.Text = "Search customers, products, invoices...";
-                    txtGlobalSearch.ForeColor = Color.Gray;
-                }
-            };
-            txtGlobalSearch.KeyDown += (s, e2) =>
-            {
-                if (e2.KeyCode == Keys.Enter && !string.IsNullOrWhiteSpace(txtGlobalSearch.Text)
-                    && txtGlobalSearch.Text != "Search customers, products, invoices...")
-                {
-                    var searchForm = new GlobalSearchForm(this, txtGlobalSearch.Text);
-                    searchForm.ShowDialog(this);
-                    e2.Handled = true;
-                    e2.SuppressKeyPress = true;
-                }
-            };
-
-            searchBox.Controls.Add(lblSearchIcon);
-            searchBox.Controls.Add(txtGlobalSearch);
-
-            Button btnSearchGo = new Button()
-            {
-                Text = "Search",
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                BackColor = ColorTranslator.FromHtml("#1D2068"),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Size = new Size(80, 38),
-                Cursor = Cursors.Hand,
-                Anchor = AnchorStyles.None,
-                Location = new Point(460, 6)
-            };
-            btnSearchGo.FlatAppearance.BorderSize = 0;
-            btnSearchGo.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, 80, 38, 10, 10));
-            btnSearchGo.Click += (s, e2) =>
-            {
-                string q = txtGlobalSearch.Text;
-                if (!string.IsNullOrWhiteSpace(q) && q != "Search customers, products, invoices...")
-                {
-                    var searchForm = new GlobalSearchForm(this, q);
-                    searchForm.ShowDialog(this);
-                }
-            };
-            btnSearchGo.MouseEnter += (s, e2) => btnSearchGo.BackColor = ColorTranslator.FromHtml("#0D1340");
-            btnSearchGo.MouseLeave += (s, e2) => btnSearchGo.BackColor = ColorTranslator.FromHtml("#1D2068");
-
-            searchBarPanel.Controls.Add(searchBox);
-            searchBarPanel.Controls.Add(btnSearchGo);
-
-            // Center search box dynamically
-            mainPanel.Resize += (s, e2) =>
-            {
-                searchBox.Location = new Point((mainPanel.ClientSize.Width - 550) / 2, 6);
-                btnSearchGo.Location = new Point(searchBox.Left + searchBox.Width + 10, 6);
-            };
-
-            mainPanel.Controls.Add(searchBarPanel);
             TableLayoutPanel infoGrid = new TableLayoutPanel()
             {
                 ColumnCount = 3,
@@ -321,89 +212,43 @@ namespace SDK_E_INVOICING_SYSTEM
             SetActiveButton(btnDashboard);
 
             // ===== Button Events =====
-            btnDashboard.Click += (s, e) => SetActiveButton(btnDashboard, "You are already on Dashboard");
-            btnCustomers.Click += (s, e) =>
+            void LaunchChildForm(Form form, Button btn, string title)
             {
-                SetActiveButton(btnCustomers);
-                this.Hide();
-                var form = new CustomerForm();
-                FormTransitionHelper.AnimateFadeIn(form);
-                form.FormClosed += (sender2, args) => {
-                    this.Show();
-                    FormTransitionHelper.AnimateFadeIn(this);
+                SetActiveButton(btn);
+                this.Text = title;
+                
+                FormClosingEventHandler closingHandler = null;
+                closingHandler = (sender2, args) => {
+                    if (args.CloseReason == CloseReason.UserClosing)
+                    {
+                        args.Cancel = true;
+                        form.FormClosing -= closingHandler;
+                        this.Text = "HCR e-Invoice - Dashboard";
+                        SetActiveButton(btnDashboard);
+                        FormTransitionHelper.ReturnToParent(form, this);
+                    }
                 };
-                form.Show();
-            };
-            btnProducts.Click += (s, e) =>
-            {
-                SetActiveButton(btnProducts);
-                this.Hide();
-                var form = new ProductForm();
-                FormTransitionHelper.AnimateFadeIn(form);
-                form.FormClosed += (sender2, args) => {
-                    this.Show();
-                    FormTransitionHelper.AnimateFadeIn(this);
-                };
-                form.Show();
-            };
-            btnInvoice.Click += (s, e) =>
-            {
-                SetActiveButton(btnInvoice);
-                this.Hide();
-                var form = new GenerateInvoiceForm();
-                FormTransitionHelper.AnimateFadeIn(form);
-                form.FormClosed += (sender2, args) => {
-                    this.Show();
-                    FormTransitionHelper.AnimateFadeIn(this);
-                };
-                form.Show();
-            };
-            btnViewInvoices.Click += (s, e) =>
-            {
-                SetActiveButton(btnViewInvoices);
-                this.Hide();
-                var form = new InvoiceViewerForm();
-                FormTransitionHelper.AnimateFadeIn(form);
-                form.FormClosed += (sender2, args) => {
-                    this.Show();
-                    FormTransitionHelper.AnimateFadeIn(this);
-                };
-                form.Show();
-            };
+                form.FormClosing += closingHandler;
 
-            btnSeller.Click += (s, e) =>
-            {
-                SetActiveButton(btnSeller);
-                this.Hide();
-                var form = new SellerForm();
-                FormTransitionHelper.AnimateFadeIn(form);
-                form.FormClosed += (sender2, args) => {
-                    this.Show();
-                    FormTransitionHelper.AnimateFadeIn(this);
-                };
-                form.Show();
-            };
-            btnPayments.Click += (s, e) =>
-            {
-                SetActiveButton(btnPayments);
-                this.Hide();
-                var form = new PaymentForm();
-                FormTransitionHelper.AnimateFadeIn(form);
-                form.FormClosed += (sender2, args) => {
-                    this.Show();
-                    FormTransitionHelper.AnimateFadeIn(this);
-                };
-                form.Show();
-            };
+                FormTransitionHelper.NavigateTo(this, form, false);
+            }
+
+            btnDashboard.Click += (s, e) => SetActiveButton(btnDashboard, "You are already on Dashboard");
+            btnCustomers.Click += (s, e) => LaunchChildForm(new CustomerForm(), btnCustomers, "HCR e-Invoice - Customer Management");
+            btnProducts.Click += (s, e) => LaunchChildForm(new ProductForm(), btnProducts, "HCR e-Invoice - Product Management");
+            btnInvoice.Click += (s, e) => LaunchChildForm(new GenerateInvoiceForm(), btnInvoice, "HCR e-Invoice - Generate Invoice");
+            btnViewInvoices.Click += (s, e) => LaunchChildForm(new InvoiceViewerForm(), btnViewInvoices, "HCR e-Invoice - Invoice List");
+            btnSeller.Click += (s, e) => LaunchChildForm(new SellerForm(), btnSeller, "HCR e-Invoice - Seller Management");
+            btnPayments.Click += (s, e) => LaunchChildForm(new PaymentForm(), btnPayments, "HCR e-Invoice - Payment Management");
             btnLogout.Click += (s, e) =>
             {
+                _loggingOut = true;
+                var login = new LoginForm();
+                login.Show();
                 FormTransitionHelper.AnimateFadeOut(this, () =>
                 {
-                    var login = new LoginForm();
-                    login.Show();
-                    FormTransitionHelper.AnimateFadeIn(login);
-                    this.Hide();
-                });
+                    if (!this.IsDisposed) this.Close();
+                }, 200);
             };
         }
 
@@ -590,7 +435,7 @@ namespace SDK_E_INVOICING_SYSTEM
 
         private void DashboardForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (e.CloseReason == CloseReason.UserClosing)
+            if (e.CloseReason == CloseReason.UserClosing && !_loggingOut)
             {
                 e.Cancel = true;
                 this.Hide();
@@ -664,12 +509,6 @@ namespace SDK_E_INVOICING_SYSTEM
             {
                 g.DrawString("WEEKLY REVENUE TREND (PKR)", titleFont, titleBrush, 15, 10);
             }
-
-            // Draw border/card background (removed to blend cleanly with transparent background)
-            // using (Pen borderPen = new Pen(Color.FromArgb(230, 235, 240), 1))
-            // {
-            //     g.DrawRectangle(borderPen, 0, 0, this.Width - 1, this.Height - 1);
-            // }
 
             int paddingLeft = 55;
             int paddingRight = 15;
@@ -828,12 +667,6 @@ namespace SDK_E_INVOICING_SYSTEM
             {
                 g.DrawString("PAYMENT STATUS BREAKDOWN", titleFont, titleBrush, 15, 10);
             }
-
-            // Draw border (removed to blend cleanly with transparent background)
-            // using (Pen borderPen = new Pen(Color.FromArgb(230, 235, 240), 1))
-            // {
-            //     g.DrawRectangle(borderPen, 0, 0, this.Width - 1, this.Height - 1);
-            // }
 
             double total = paidAmount + unpaidAmount;
             if (total == 0)

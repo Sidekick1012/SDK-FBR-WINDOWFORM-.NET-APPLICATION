@@ -1,9 +1,9 @@
-using InvoiceApp;
-using SDK_E_INVOICING_SYSTEM;
-using SDK_E_INVOICING_SYSTEM.Data;
+﻿using InvoiceApp;
+using HCR_E_INVOICING_SYSTEM;
+using HCR_E_INVOICING_SYSTEM.Data;
 using System;
 using System.Windows.Forms;
-using SDK_E_INVOICING_SYSTEM.Helpers;
+using HCR_E_INVOICING_SYSTEM.Helpers;
 using System.IO;
 
 namespace HCR_eInvoice

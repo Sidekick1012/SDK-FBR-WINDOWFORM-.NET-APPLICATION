@@ -6,7 +6,7 @@ public static class FormTransitionHelper
 {
     private static Timer activeFadeInTimer = null;
 
-    public static void AnimateFadeIn(Form form, int durationMs = 250)
+    public static void AnimateFadeIn(Form form, int durationMs = 250, Action onComplete = null)
     {
         form.Opacity = 0;
         Timer timer = new Timer();
@@ -19,6 +19,7 @@ public static class FormTransitionHelper
             {
                 timer.Stop();
                 timer.Dispose();
+                onComplete?.Invoke();
                 return;
             }
 
@@ -28,6 +29,7 @@ public static class FormTransitionHelper
                 form.Opacity = 1;
                 timer.Stop();
                 timer.Dispose();
+                onComplete?.Invoke();
             }
         };
         timer.Start();
@@ -67,30 +69,46 @@ public static class FormTransitionHelper
         targetForm.WindowState = currentForm.WindowState;
         targetForm.StartPosition = FormStartPosition.CenterScreen;
 
-        AnimateFadeOut(currentForm, () =>
-        {
-            if (closeCurrent)
-            {
-                currentForm.Close();
-            }
-            else
-            {
-                currentForm.Hide();
-            }
+        // Set targetForm opacity to 0 first, then show it (so it overlays currentForm)
+        targetForm.Opacity = 0;
+        targetForm.Show();
 
-            targetForm.Show();
-            AnimateFadeIn(targetForm);
+        // Fade in targetForm. Once done, hide or close currentForm.
+        AnimateFadeIn(targetForm, 200, () =>
+        {
+            if (currentForm != null && !currentForm.IsDisposed)
+            {
+                if (closeCurrent)
+                {
+                    currentForm.Close();
+                }
+                else
+                {
+                    currentForm.Hide();
+                }
+            }
         });
     }
 
     public static void ReturnToParent(Form currentForm, Form parentForm)
     {
-        AnimateFadeOut(currentForm, () =>
+        // Copy window state
+        parentForm.WindowState = currentForm.WindowState;
+        parentForm.StartPosition = FormStartPosition.CenterScreen;
+
+        // Set parentForm opacity to 0 first, then show it (so it overlays currentForm)
+        parentForm.Opacity = 0;
+        parentForm.Show();
+
+        // Fade in parentForm. Once done, hide or close currentForm.
+        AnimateFadeIn(parentForm, 200, () =>
         {
-            currentForm.Hide(); // Hide first to prevent flickering
-            parentForm.Show();
-            AnimateFadeIn(parentForm);
-            currentForm.Close();
+            if (currentForm != null && !currentForm.IsDisposed)
+            {
+                currentForm.Hide();
+                currentForm.Close();
+            }
         });
     }
 }
+

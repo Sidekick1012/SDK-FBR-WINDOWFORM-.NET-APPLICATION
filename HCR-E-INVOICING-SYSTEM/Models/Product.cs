@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SDK_E_INVOICING_SYSTEM.Models
+namespace HCR_E_INVOICING_SYSTEM.Models
 {
     public class Product
     {

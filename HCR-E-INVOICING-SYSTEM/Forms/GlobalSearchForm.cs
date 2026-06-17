@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Data.SQLite;
 using System.Drawing;
 using System.Windows.Forms;
-using SDK_E_INVOICING_SYSTEM.Data;
-using SDK_E_INVOICING_SYSTEM;
+using HCR_E_INVOICING_SYSTEM.Data;
+using HCR_E_INVOICING_SYSTEM;
 using InvoiceApp;
 
 public class GlobalSearchForm : Form
@@ -274,14 +274,20 @@ public class GlobalSearchForm : Form
         if (e.RowIndex >= 0 && dgvCustomers.Rows[e.RowIndex].Cells["Business Name"].Value != null)
         {
             this.Close();
-            parentDashboard.Hide();
             var form = new CustomerForm();
-            form.FormClosed += (s, args) => {
-                parentDashboard.Show();
-                FormTransitionHelper.AnimateFadeIn(parentDashboard);
+            
+            FormClosingEventHandler closingHandler = null;
+            closingHandler = (s, args) => {
+                if (args.CloseReason == CloseReason.UserClosing)
+                {
+                    args.Cancel = true;
+                    form.FormClosing -= closingHandler;
+                    FormTransitionHelper.ReturnToParent(form, parentDashboard);
+                }
             };
-            form.Show();
-            FormTransitionHelper.AnimateFadeIn(form);
+            form.FormClosing += closingHandler;
+
+            FormTransitionHelper.NavigateTo(parentDashboard, form, false);
         }
     }
 
@@ -290,14 +296,20 @@ public class GlobalSearchForm : Form
         if (e.RowIndex >= 0 && dgvProducts.Rows[e.RowIndex].Cells["Description"].Value != null)
         {
             this.Close();
-            parentDashboard.Hide();
             var form = new ProductForm();
-            form.FormClosed += (s, args) => {
-                parentDashboard.Show();
-                FormTransitionHelper.AnimateFadeIn(parentDashboard);
+
+            FormClosingEventHandler closingHandler = null;
+            closingHandler = (s, args) => {
+                if (args.CloseReason == CloseReason.UserClosing)
+                {
+                    args.Cancel = true;
+                    form.FormClosing -= closingHandler;
+                    FormTransitionHelper.ReturnToParent(form, parentDashboard);
+                }
             };
-            form.Show();
-            FormTransitionHelper.AnimateFadeIn(form);
+            form.FormClosing += closingHandler;
+
+            FormTransitionHelper.NavigateTo(parentDashboard, form, false);
         }
     }
 
@@ -307,13 +319,20 @@ public class GlobalSearchForm : Form
         {
             string invNo = dgvInvoices.Rows[e.RowIndex].Cells["Invoice Number"].Value.ToString();
             this.Close();
-            parentDashboard.Hide();
             var form = new InvoiceViewerForm(invNo);
-            form.FormClosed += (s, args) => {
-                parentDashboard.Show();
-                FormTransitionHelper.AnimateFadeIn(parentDashboard);
+
+            FormClosingEventHandler closingHandler = null;
+            closingHandler = (s, args) => {
+                if (args.CloseReason == CloseReason.UserClosing)
+                {
+                    args.Cancel = true;
+                    form.FormClosing -= closingHandler;
+                    FormTransitionHelper.ReturnToParent(form, parentDashboard);
+                }
             };
-            form.Show();
+            form.FormClosing += closingHandler;
+
+            FormTransitionHelper.NavigateTo(parentDashboard, form, false);
         }
     }
 }

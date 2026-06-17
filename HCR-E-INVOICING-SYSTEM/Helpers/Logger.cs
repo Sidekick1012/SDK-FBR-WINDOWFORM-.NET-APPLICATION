@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.IO;
 
-namespace SDK_E_INVOICING_SYSTEM.Helpers
+namespace HCR_E_INVOICING_SYSTEM.Helpers
 {
     public static class Logger
     {

@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Data.SQLite;
 
-namespace SDK_E_INVOICING_SYSTEM.Data
+namespace HCR_E_INVOICING_SYSTEM.Data
 {
     public static class DatabaseHelper
     {
@@ -21,7 +21,7 @@ namespace SDK_E_INVOICING_SYSTEM.Data
             {
                 DbFolder = System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "SDKEInvoicing");
+                    "HCREInvoicing");
                 
                 try
                 {
@@ -272,10 +272,10 @@ CREATE TABLE IF NOT EXISTS Payments (
                 if (!System.IO.File.Exists(sourceFile))
                     return;
 
-                // Destination path (My Documents\SDKEInvoicing_Backups)
+                // Destination path (My Documents\HCREInvoicing_Backups)
                 string backupFolder = System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                    "SDKEInvoicing_Backups");
+                    "HCREInvoicing_Backups");
 
                 // Ensure backup folder exists
                 if (!System.IO.Directory.Exists(backupFolder))

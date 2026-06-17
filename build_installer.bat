@@ -1,12 +1,12 @@
 @echo off
-title SDK E-Invoicing System Installer Builder
+title HCR E-Invoicing System Installer Builder
 echo ===================================================
-echo   Building SDK E-Invoicing System Release Build...
+echo   Building HCR E-Invoicing System Release Build...
 echo ===================================================
 echo.
 
 :: 1. Build the project in Release configuration
-dotnet build -c Release "c:\Users\PC\source\repos\SDK-E-INVOICING-SYSTEM\SDK-E-INVOICING-SYSTEM.sln"
+dotnet build -c Release "c:\Users\PC\source\repos\HCR-E-INVOICING-SYSTEM\HCR-E-INVOICING-SYSTEM.sln"
 if errorlevel 1 (
     echo.
     echo [ERROR] Visual Studio / dotnet Build failed! Please fix compiler errors.
@@ -21,7 +21,7 @@ echo ===================================================
 echo.
 
 :: Run Obfuscar to secure the code
-obfuscar.console "c:\Users\PC\source\repos\SDK-E-INVOICING-SYSTEM\SDK-E-INVOICING-SYSTEM\obfuscar.xml"
+obfuscar.console "c:\Users\PC\source\repos\HCR-E-INVOICING-SYSTEM\HCR-E-INVOICING-SYSTEM\obfuscar.xml"
 if errorlevel 1 (
     echo.
     echo [ERROR] Code Obfuscation failed!
@@ -30,7 +30,7 @@ if errorlevel 1 (
 )
 
 :: Replace the original executable with the obfuscated one so Inno Setup picks it up
-copy /Y "c:\Users\PC\source\repos\SDK-E-INVOICING-SYSTEM\SDK-E-INVOICING-SYSTEM\bin\Release\Obfuscated\SDK-E-INVOICING-SYSTEM.exe" "c:\Users\PC\source\repos\SDK-E-INVOICING-SYSTEM\SDK-E-INVOICING-SYSTEM\bin\Release\SDK-E-INVOICING-SYSTEM.exe"
+copy /Y "c:\Users\PC\source\repos\HCR-E-INVOICING-SYSTEM\HCR-E-INVOICING-SYSTEM\bin\Release\Obfuscated\HCR-E-INVOICING-SYSTEM.exe" "c:\Users\PC\source\repos\HCR-E-INVOICING-SYSTEM\HCR-E-INVOICING-SYSTEM\bin\Release\HCR-E-INVOICING-SYSTEM.exe"
 if errorlevel 1 (
     echo.
     echo [ERROR] Failed to copy obfuscated executable!
@@ -58,7 +58,7 @@ if "%ISCC_PATH%"=="" (
     exit /b 1
 )
 
-"%ISCC_PATH%" "c:\Users\PC\source\repos\SDK-E-INVOICING-SYSTEM\installer_setup.iss"
+"%ISCC_PATH%" "c:\Users\PC\source\repos\HCR-E-INVOICING-SYSTEM\installer_setup.iss"
 if errorlevel 1 (
     echo.
     echo [ERROR] Installer compilation failed!
@@ -71,6 +71,6 @@ echo ===================================================
 echo   SUCCESS! Installer created successfully!
 echo ===================================================
 echo.
-echo Location: c:\Users\PC\source\repos\SDK-E-INVOICING-SYSTEM\InstallerOutput\SDK_E_Invoicing_System_Setup.exe
+echo Location: c:\Users\PC\source\repos\HCR-E-INVOICING-SYSTEM\InstallerOutput\HCR_E_Invoicing_System_Setup.exe
 echo.
 pause

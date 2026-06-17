@@ -1,5 +1,5 @@
-using SDK_E_INVOICING_SYSTEM;
-using SDK_E_INVOICING_SYSTEM.Data;
+﻿using HCR_E_INVOICING_SYSTEM;
+using HCR_E_INVOICING_SYSTEM.Data;
 using System;
 using System.Data.SQLite;
 using System.Drawing;

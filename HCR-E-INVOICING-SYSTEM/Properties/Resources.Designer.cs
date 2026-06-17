@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace SDK_E_INVOICING_SYSTEM.Properties
+namespace HCR_E_INVOICING_SYSTEM.Properties
 {
 
 
@@ -44,7 +44,7 @@ namespace SDK_E_INVOICING_SYSTEM.Properties
             {
                 if ((resourceMan == null))
                 {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("SDK_E_INVOICING_SYSTEM.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("HCR_E_INVOICING_SYSTEM.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

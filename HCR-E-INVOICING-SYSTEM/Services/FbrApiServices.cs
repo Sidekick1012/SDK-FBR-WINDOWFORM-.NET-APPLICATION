@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 //using LiveCharts;
 using System;
 using System.Net.Http;
@@ -35,7 +35,7 @@ public class FbrApiService
         // Default headers
         _client.DefaultRequestHeaders.Accept.Clear();
         _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        _client.DefaultRequestHeaders.UserAgent.ParseAdd("SDK-E-Invoicing-System/1.0");
+        _client.DefaultRequestHeaders.UserAgent.ParseAdd("HCR-E-INVOICING-SYSTEM/1.0");
     }
 
     /// <summary>

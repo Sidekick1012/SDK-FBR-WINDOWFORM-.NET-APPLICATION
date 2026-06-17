@@ -9,10 +9,10 @@ COPY . .
 
 # Restore NuGet packages for the project
 # NOTE: update the path below if your .csproj location differs
-RUN nuget restore "SDK-E-INVOICING-SYSTEM/SDK-E-INVOICING-SYSTEM/SDK-E-INVOICING-SYSTEM.csproj"
+RUN nuget restore "HCR-E-INVOICING-SYSTEM/HCR-E-INVOICING-SYSTEM.csproj"
 
 # Build in Release configuration and output to C:\out
-RUN msbuild "SDK-E-INVOICING-SYSTEM/SDK-E-INVOICING-SYSTEM/SDK-E-INVOICING-SYSTEM.csproj" /p:Configuration=Release /p:OutputPath="C:\out"
+RUN msbuild "HCR-E-INVOICING-SYSTEM/HCR-E-INVOICING-SYSTEM.csproj" /p:Configuration=Release /p:OutputPath="C:\out"
 
 # Runtime stage: copy compiled artifacts
 FROM mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-ltsc2019 AS runtime
@@ -27,4 +27,4 @@ COPY --from=build C:\out\ .
 #   docker run -v "C:\host\data:C:\app" invoiceapp
 # The application stores `einvoice.db` in the application directory by default.
 
-ENTRYPOINT ["SDK-E-INVOICING-SYSTEM.exe"]
+ENTRYPOINT ["HCR-E-INVOICING-SYSTEM.exe"]

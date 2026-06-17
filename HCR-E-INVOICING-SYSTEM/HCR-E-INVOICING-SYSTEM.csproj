@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Xamarin.Forms.5.0.0.2622\build\Xamarin.Forms.props" Condition="Exists('..\packages\Xamarin.Forms.5.0.0.2622\build\Xamarin.Forms.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -7,8 +7,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{C6ADFD00-76C7-4AF9-90E1-66A7C81350C4}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>SDK_E_INVOICING_SYSTEM</RootNamespace>
-    <AssemblyName>SDK-E-INVOICING-SYSTEM</AssemblyName>
+    <RootNamespace>HCR_E_INVOICING_SYSTEM</RootNamespace>
+    <AssemblyName>HCR-E-INVOICING-SYSTEM</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

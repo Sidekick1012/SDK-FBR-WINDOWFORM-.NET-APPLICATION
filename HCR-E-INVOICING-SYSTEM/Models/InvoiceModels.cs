@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace SDK_E_INVOICING_SYSTEM.Models
+namespace HCR_E_INVOICING_SYSTEM.Models
 {
     public class InvoiceItem
     {

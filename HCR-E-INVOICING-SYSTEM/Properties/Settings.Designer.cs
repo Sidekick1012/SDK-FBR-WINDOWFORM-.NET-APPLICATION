@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace SDK_E_INVOICING_SYSTEM.Properties
+namespace HCR_E_INVOICING_SYSTEM.Properties
 {
 
 

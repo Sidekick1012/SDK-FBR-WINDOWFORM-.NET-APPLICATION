@@ -1,11 +1,11 @@
-using SDK_E_INVOICING_SYSTEM.Data;
+﻿using HCR_E_INVOICING_SYSTEM.Data;
 using System;
 using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace SDK_E_INVOICING_SYSTEM
+namespace HCR_E_INVOICING_SYSTEM
 {
     public partial class InvoiceUpdateForm : Form
     {

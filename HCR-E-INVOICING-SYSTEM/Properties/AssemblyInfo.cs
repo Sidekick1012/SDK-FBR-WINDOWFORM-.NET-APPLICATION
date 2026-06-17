@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("SDK-E-INVOICING-SYSTEM")]
+[assembly: AssemblyTitle("HCR-E-INVOICING-SYSTEM")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("SDK-E-INVOICING-SYSTEM")]
+[assembly: AssemblyProduct("HCR-E-INVOICING-SYSTEM")]
 [assembly: AssemblyCopyright("Copyright ©  2025")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

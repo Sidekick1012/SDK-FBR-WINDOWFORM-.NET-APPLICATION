@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -13,7 +13,7 @@ using System.Windows.Forms;
 using PdfSharp.Drawing;
 using PdfSharp.Pdf;
 using QRCoder;
-using SDK_E_INVOICING_SYSTEM.Data;
+using HCR_E_INVOICING_SYSTEM.Data;
 using static QRCoder.PayloadGenerator;
 
 public class InvoicePreviewForm : Form

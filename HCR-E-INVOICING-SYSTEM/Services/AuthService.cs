@@ -1,7 +1,7 @@
-﻿using SDK_E_INVOICING_SYSTEM.Data;
+﻿using HCR_E_INVOICING_SYSTEM.Data;
 using System.Data.SQLite;
 
-namespace SDK_E_INVOICING_SYSTEM.Services
+namespace HCR_E_INVOICING_SYSTEM.Services
 {
     public class AuthService
     {
