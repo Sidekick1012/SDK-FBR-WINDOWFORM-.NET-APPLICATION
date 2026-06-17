@@ -33,6 +33,17 @@ public class InvoiceViewerForm : Form
         InitializeComponent();
         InitializeGrid();
         LoadInvoices();
+        this.Load += (s, e) => FormTransitionHelper.AnimateFadeIn(this);
+    }
+
+    public InvoiceViewerForm(string preFilterInvoiceNo) : this()
+    {
+        // Pre-populate the invoice no search box if provided
+        if (!string.IsNullOrWhiteSpace(preFilterInvoiceNo) && txtInvoiceNo != null)
+        {
+            txtInvoiceNo.Text = preFilterInvoiceNo;
+            LoadInvoices(dtpFrom.Value, dtpTo.Value, "", preFilterInvoiceNo);
+        }
     }
 
     private void InitializeComponent()

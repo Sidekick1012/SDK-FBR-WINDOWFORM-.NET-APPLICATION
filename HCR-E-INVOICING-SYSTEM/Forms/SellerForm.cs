@@ -20,6 +20,7 @@ public class SellerForm : Form
         this.Text = "Seller Management";
         this.WindowState = FormWindowState.Maximized;
         this.BackColor = Color.White;
+        this.Load += (s, e) => FormTransitionHelper.AnimateFadeIn(this);
 
         var layout = new TableLayoutPanel
         {

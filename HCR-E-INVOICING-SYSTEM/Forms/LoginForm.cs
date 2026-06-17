@@ -22,6 +22,8 @@ namespace InvoiceApp
         {
 
             InitializeUI();
+            // Fade in on load
+            this.Load += (s, e) => FormTransitionHelper.AnimateFadeIn(this);
         }
 
         private void InitializeUI()
@@ -345,13 +347,14 @@ namespace InvoiceApp
 
             if (ValidateUser(username, password))
             {
-
-
-
-                // Open Dashboard
-                var dashboard = new DashboardForm();
-                dashboard.Show();
-                this.Hide();
+                // Fade out then open Dashboard
+                FormTransitionHelper.AnimateFadeOut(this, () =>
+                {
+                    var dashboard = new DashboardForm();
+                    dashboard.Show();
+                    FormTransitionHelper.AnimateFadeIn(dashboard);
+                    this.Hide();
+                });
             }
             else
             {

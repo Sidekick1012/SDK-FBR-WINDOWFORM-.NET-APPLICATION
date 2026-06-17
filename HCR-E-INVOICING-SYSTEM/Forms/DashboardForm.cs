@@ -137,7 +137,117 @@ namespace SDK_E_INVOICING_SYSTEM
             };
             this.Controls.Add(mainPanel);
 
-            // ===== Info Cards =====
+            // ===== Global Search Bar (Top of main panel) =====
+            Panel searchBarPanel = new Panel()
+            {
+                Height = 50,
+                Dock = DockStyle.Top,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0, 5, 0, 5)
+            };
+
+            Panel searchBox = new Panel()
+            {
+                Height = 38,
+                Width = 450,
+                BackColor = Color.White,
+                Anchor = AnchorStyles.None,
+                Location = new Point(0, 6)
+            };
+            searchBox.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, 450, 38, 10, 10));
+            searchBox.Paint += (s, e2) =>
+            {
+                using (var pen = new System.Drawing.Pen(ColorTranslator.FromHtml("#D0D7E2"), 1))
+                    e2.Graphics.DrawRectangle(pen, 0, 0, searchBox.Width - 1, searchBox.Height - 1);
+            };
+
+            Label lblSearchIcon = new Label()
+            {
+                Text = "🔍",
+                Font = new Font("Segoe UI Emoji", 12),
+                Location = new Point(8, 6),
+                AutoSize = true,
+                BackColor = Color.Transparent
+            };
+
+            TextBox txtGlobalSearch = new TextBox()
+            {
+                Font = new Font("Segoe UI", 11),
+                Location = new Point(36, 8),
+                Width = 370,
+                BorderStyle = BorderStyle.None,
+                BackColor = Color.White,
+                ForeColor = Color.Gray,
+                Text = "Search customers, products, invoices..."
+            };
+            txtGlobalSearch.GotFocus += (s, e2) =>
+            {
+                if (txtGlobalSearch.Text == "Search customers, products, invoices...")
+                {
+                    txtGlobalSearch.Text = "";
+                    txtGlobalSearch.ForeColor = Color.FromArgb(30, 30, 60);
+                }
+            };
+            txtGlobalSearch.LostFocus += (s, e2) =>
+            {
+                if (string.IsNullOrWhiteSpace(txtGlobalSearch.Text))
+                {
+                    txtGlobalSearch.Text = "Search customers, products, invoices...";
+                    txtGlobalSearch.ForeColor = Color.Gray;
+                }
+            };
+            txtGlobalSearch.KeyDown += (s, e2) =>
+            {
+                if (e2.KeyCode == Keys.Enter && !string.IsNullOrWhiteSpace(txtGlobalSearch.Text)
+                    && txtGlobalSearch.Text != "Search customers, products, invoices...")
+                {
+                    var searchForm = new GlobalSearchForm(this, txtGlobalSearch.Text);
+                    searchForm.ShowDialog(this);
+                    e2.Handled = true;
+                    e2.SuppressKeyPress = true;
+                }
+            };
+
+            searchBox.Controls.Add(lblSearchIcon);
+            searchBox.Controls.Add(txtGlobalSearch);
+
+            Button btnSearchGo = new Button()
+            {
+                Text = "Search",
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                BackColor = ColorTranslator.FromHtml("#1D2068"),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(80, 38),
+                Cursor = Cursors.Hand,
+                Anchor = AnchorStyles.None,
+                Location = new Point(460, 6)
+            };
+            btnSearchGo.FlatAppearance.BorderSize = 0;
+            btnSearchGo.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, 80, 38, 10, 10));
+            btnSearchGo.Click += (s, e2) =>
+            {
+                string q = txtGlobalSearch.Text;
+                if (!string.IsNullOrWhiteSpace(q) && q != "Search customers, products, invoices...")
+                {
+                    var searchForm = new GlobalSearchForm(this, q);
+                    searchForm.ShowDialog(this);
+                }
+            };
+            btnSearchGo.MouseEnter += (s, e2) => btnSearchGo.BackColor = ColorTranslator.FromHtml("#0D1340");
+            btnSearchGo.MouseLeave += (s, e2) => btnSearchGo.BackColor = ColorTranslator.FromHtml("#1D2068");
+
+            searchBarPanel.Controls.Add(searchBox);
+            searchBarPanel.Controls.Add(btnSearchGo);
+
+            // Center search box dynamically
+            mainPanel.Resize += (s, e2) =>
+            {
+                searchBox.Location = new Point((mainPanel.ClientSize.Width - 550) / 2, 6);
+                btnSearchGo.Location = new Point(searchBox.Left + searchBox.Width + 10, 6);
+            };
+
+            mainPanel.Controls.Add(searchBarPanel);
             TableLayoutPanel infoGrid = new TableLayoutPanel()
             {
                 ColumnCount = 3,
@@ -217,7 +327,11 @@ namespace SDK_E_INVOICING_SYSTEM
                 SetActiveButton(btnCustomers);
                 this.Hide();
                 var form = new CustomerForm();
-                form.FormClosed += (sender2, args) => this.Show(); // reopen dashboard when closed
+                FormTransitionHelper.AnimateFadeIn(form);
+                form.FormClosed += (sender2, args) => {
+                    this.Show();
+                    FormTransitionHelper.AnimateFadeIn(this);
+                };
                 form.Show();
             };
             btnProducts.Click += (s, e) =>
@@ -225,7 +339,11 @@ namespace SDK_E_INVOICING_SYSTEM
                 SetActiveButton(btnProducts);
                 this.Hide();
                 var form = new ProductForm();
-                form.FormClosed += (sender2, args) => this.Show();
+                FormTransitionHelper.AnimateFadeIn(form);
+                form.FormClosed += (sender2, args) => {
+                    this.Show();
+                    FormTransitionHelper.AnimateFadeIn(this);
+                };
                 form.Show();
             };
             btnInvoice.Click += (s, e) =>
@@ -233,7 +351,11 @@ namespace SDK_E_INVOICING_SYSTEM
                 SetActiveButton(btnInvoice);
                 this.Hide();
                 var form = new GenerateInvoiceForm();
-                form.FormClosed += (sender2, args) => this.Show();
+                FormTransitionHelper.AnimateFadeIn(form);
+                form.FormClosed += (sender2, args) => {
+                    this.Show();
+                    FormTransitionHelper.AnimateFadeIn(this);
+                };
                 form.Show();
             };
             btnViewInvoices.Click += (s, e) =>
@@ -241,7 +363,11 @@ namespace SDK_E_INVOICING_SYSTEM
                 SetActiveButton(btnViewInvoices);
                 this.Hide();
                 var form = new InvoiceViewerForm();
-                form.FormClosed += (sender2, args) => this.Show();
+                FormTransitionHelper.AnimateFadeIn(form);
+                form.FormClosed += (sender2, args) => {
+                    this.Show();
+                    FormTransitionHelper.AnimateFadeIn(this);
+                };
                 form.Show();
             };
 
@@ -250,7 +376,11 @@ namespace SDK_E_INVOICING_SYSTEM
                 SetActiveButton(btnSeller);
                 this.Hide();
                 var form = new SellerForm();
-                form.FormClosed += (sender2, args) => this.Show();
+                FormTransitionHelper.AnimateFadeIn(form);
+                form.FormClosed += (sender2, args) => {
+                    this.Show();
+                    FormTransitionHelper.AnimateFadeIn(this);
+                };
                 form.Show();
             };
             btnPayments.Click += (s, e) =>
@@ -258,13 +388,22 @@ namespace SDK_E_INVOICING_SYSTEM
                 SetActiveButton(btnPayments);
                 this.Hide();
                 var form = new PaymentForm();
-                form.FormClosed += (sender2, args) => this.Show();
+                FormTransitionHelper.AnimateFadeIn(form);
+                form.FormClosed += (sender2, args) => {
+                    this.Show();
+                    FormTransitionHelper.AnimateFadeIn(this);
+                };
                 form.Show();
             };
             btnLogout.Click += (s, e) =>
             {
-                new LoginForm().Show();
-                this.Hide();
+                FormTransitionHelper.AnimateFadeOut(this, () =>
+                {
+                    var login = new LoginForm();
+                    login.Show();
+                    FormTransitionHelper.AnimateFadeIn(login);
+                    this.Hide();
+                });
             };
         }
 

@@ -18,6 +18,7 @@ public class ProductForm : Form
         this.Text = "Product Management";
         this.WindowState = FormWindowState.Maximized;
         this.BackColor = Color.White;
+        this.Load += (s, e) => FormTransitionHelper.AnimateFadeIn(this);
 
         // === Main layout ===
         var layout = new TableLayoutPanel

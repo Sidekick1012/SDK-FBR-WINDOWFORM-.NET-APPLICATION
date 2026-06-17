@@ -69,6 +69,7 @@ public class GenerateInvoiceForm : Form
         this.Text = "Generate Invoice";
         this.WindowState = FormWindowState.Maximized;
         this.BackColor = Color.WhiteSmoke;
+        this.Load += (s, e) => FormTransitionHelper.AnimateFadeIn(this);
 
         DatabaseHelper.InitializeDatabase();
         InitializeLoader();

@@ -22,6 +22,7 @@ public class PaymentForm : Form
         this.Text = "Payment Management";
         this.WindowState = FormWindowState.Maximized;
         this.BackColor = Color.White;
+        this.Load += (s, e) => FormTransitionHelper.AnimateFadeIn(this);
 
         // ===== MAIN LAYOUT =====
         var mainLayout = new TableLayoutPanel
