@@ -10,8 +10,8 @@ namespace InvoiceApp
 {
     public class LoginForm : Form
     {
-        private Panel leftPanel, footerPanel;
-        private Label lblBrand, lblTitle, lblUsername, lblPassword, lblFooter;
+        private Panel leftPanel;
+        private Label lblBrand, lblTitle, lblUsername, lblPassword;
         private TextBox txtUsername, txtPassword;
         private Button btnLogin, btnForgot;
 
@@ -256,24 +256,7 @@ namespace InvoiceApp
             btnForgot.FlatAppearance.BorderSize = 0;
 
 
-            // Footer Panel
-            footerPanel = new Panel()
-            {
-                Dock = DockStyle.Bottom,
-                Height = 35,
-                BackColor = ColorTranslator.FromHtml("#1D2068")
-            };
-            this.Controls.Add(footerPanel);
-
-            lblFooter = new Label()
-            {
-                Text = "0300-0228444 | WWW.HCR.PK | INFO@HCR.PK",
-                Font = new Font("Segoe UI", 9, FontStyle.Italic),
-                ForeColor = Color.White,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleCenter
-            };
-            footerPanel.Controls.Add(lblFooter);
+            // Footer Panel removed
 
 
 
