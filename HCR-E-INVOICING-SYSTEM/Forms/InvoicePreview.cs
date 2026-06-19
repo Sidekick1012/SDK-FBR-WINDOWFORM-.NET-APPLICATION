@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -338,16 +338,19 @@ public class InvoicePreviewForm : Form
             Font = new Font("Segoe UI", 12, FontStyle.Bold),
             Padding = new Padding(10),
             ForeColor = Color.FromArgb(30, 60, 114),
-            Height = 180
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            MinimumSize = new Size(0, 160)
         };
 
         lblSellerInfo = new Label
         {
             AutoSize = true,
             Font = new Font("Segoe UI", 11.5f),
-            MaximumSize = new Size(350, 0),
+            MaximumSize = new Size(430, 0),  // wide enough; height=0 means unlimited
             TextAlign = ContentAlignment.TopLeft,
-            Dock = DockStyle.Fill
+            Padding = new Padding(4, 2, 4, 4)
+            // No Dock.Fill — conflicts with AutoSize and clips long addresses
         };
         // Ensure ampersands (&) render literally instead of being treated as mnemonics
         lblSellerInfo.UseMnemonic = false;
@@ -362,16 +365,19 @@ public class InvoicePreviewForm : Form
             Font = new Font("Segoe UI", 12, FontStyle.Bold),
             Padding = new Padding(10),
             ForeColor = Color.FromArgb(30, 60, 114),
-            Height = 180
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            MinimumSize = new Size(0, 160)
         };
 
         lblCustomerInfo = new Label
         {
             AutoSize = true,
             Font = new Font("Segoe UI", 11.5f),
-            MaximumSize = new Size(350, 0),
+            MaximumSize = new Size(430, 0),  // wide enough; height=0 means unlimited
             TextAlign = ContentAlignment.TopLeft,
-            Dock = DockStyle.Fill
+            Padding = new Padding(4, 2, 4, 4)
+            // No Dock.Fill — conflicts with AutoSize and clips long addresses
         };
         lblCustomerInfo.UseMnemonic = false;
 
