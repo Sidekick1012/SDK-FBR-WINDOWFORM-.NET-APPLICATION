@@ -183,7 +183,7 @@ public class InvoicePreviewForm : Form
             e.Graphics.ResetTransform();
         };
         pnlInvoice.Controls.Add(lblVerticalInvoice);
-        lblVerticalInvoice.BringToFront();
+        lblVerticalInvoice.SendToBack(); // Keep behind DGV so first column is never hidden
 
         // ===== HEADER =====
         var headerTable = new TableLayoutPanel
@@ -1782,12 +1782,17 @@ public class InvoicePreviewForm : Form
 
             string[] headers = { "Code", "Item Description", "Unit Price", "Qty", "Gross", "Discount", "Amt Excl.", "Tax %", "Tax Val", "Amt Incl." };
 
-            // Helper: draw text in a cell rectangle with padding, clipped to cell bounds
+            // Helper: draw text strictly clipped to a column cell.
+            // PDFsharp DrawString with XRect positions text but does NOT clip it;
+            // IntersectClip + Save/Restore enforces a hard cell boundary.
             Action<string, XFont, XBrush, int, double, double, XStringFormat> drawCell = (text, font, brush, colIdx, rowY, rowH, fmt) =>
             {
                 double pad = 3.0;
                 XRect cellRect = new XRect(colX[colIdx] + pad, rowY + 1, colWidths[colIdx] - pad * 2, rowH - 2);
+                XGraphicsState clipState = gfx.Save();
+                gfx.IntersectClip(cellRect);
                 gfx.DrawString(text, font, brush, cellRect, fmt);
+                gfx.Restore(clipState);
             };
 
             // Helper to draw table header row
@@ -1804,17 +1809,20 @@ public class InvoicePreviewForm : Form
                     gfx.DrawLine(whiteGridPen, colX[i], currentY, colX[i], currentY + hdrH);
                 }
 
-                // Draw header text inside each cell rect (clipped)
+                // Draw header text — each cell strictly clipped so text never bleeds into adjacent column
                 for (int i = 0; i < headers.Length; i++)
                 {
                     XStringFormat fmt;
-                    if (i == 0)      fmt = XStringFormats.Center;    // Code — centered
-                    else if (i == 1) fmt = XStringFormats.CenterLeft; // Description — left
-                    else             fmt = XStringFormats.CenterRight; // Numbers — right
+                    if (i == 0)      fmt = XStringFormats.Center;     // Code — centered
+                    else if (i == 1) fmt = XStringFormats.CenterLeft;  // Description — left
+                    else             fmt = XStringFormats.CenterRight; // Numeric — right
 
                     double pad = 3.0;
                     XRect cellRect = new XRect(colX[i] + pad, currentY + 1, colWidths[i] - pad * 2, hdrH - 2);
+                    XGraphicsState clipState = gfx.Save();
+                    gfx.IntersectClip(cellRect);
                     gfx.DrawString(headers[i], tableHeaderFont, whiteBrush, cellRect, fmt);
+                    gfx.Restore(clipState);
                 }
                 currentY += hdrH;
             };
