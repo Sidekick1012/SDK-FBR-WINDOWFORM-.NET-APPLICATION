@@ -1637,8 +1637,6 @@ public class InvoicePreviewForm : Form
                     Console.WriteLine("Error rendering FBR logo in PDF: " + ex.Message);
                 }
 
-                // Under FBR/QR section notice
-                gfx.DrawString("Computer generated invoice. No signature or stamp required.", italicFont, grayBrush, margin, 105);
 
                 // Meta row: Date, Invoice number, FBR number, status
                 currentY = 125;
@@ -1715,19 +1713,19 @@ public class InvoicePreviewForm : Form
                 currentY += boxHeight + 20;
             };
 
-            // Helper: draw footer on current page (called before closing gfx)
+            // Helper: draw footer on current page using direct coordinates (no XRect clipping)
             Action drawPageFooter = () =>
             {
                 if (gfx == null) return;
-                double footerY = pageHeight - 60;
+                double fy = pageHeight - 58;
                 // Separator line
-                gfx.DrawLine(new XPen(XColor.FromArgb(226, 232, 240), 1), margin, footerY, margin + printableWidth, footerY);
-                // Footer text (contact info from DB)
-                XRect fRect = new XRect(margin, footerY + 5, printableWidth, 14);
-                gfx.DrawString(pdfFooterText, smallFont, grayBrush, fRect, XStringFormats.Center);
-                // Computer-generated notice
-                XRect cgRect = new XRect(margin, footerY + 18, printableWidth, 12);
-                gfx.DrawString("This is a computer generated invoice. No signature or stamp required.", smallFont, grayBrush, cgRect, XStringFormats.Center);
+                gfx.DrawLine(new XPen(XColor.FromArgb(180, 200, 220), 0.75), margin, fy, margin + printableWidth, fy);
+                // Footer contact text - direct draw, centered manually
+                double fTextY = fy + 8;
+                gfx.DrawString(pdfFooterText, smallFont, grayBrush, margin, fTextY);
+                // Computer generated notice
+                double cgY = fTextY + 13;
+                gfx.DrawString("This is a computer generated invoice. No signature or stamp required.", smallFont, grayBrush, margin, cgY);
             };
 
             // Function to add a page
@@ -1953,16 +1951,15 @@ public class InvoicePreviewForm : Form
             // Draw footer on the LAST page (addPage draws it on all pages except the last)
             drawPageFooter();
 
-            // SECOND PASS: Add page numbers only (footer already drawn inline above)
+            // SECOND PASS: Add page numbers only
             int totalPages = pdfDoc.Pages.Count;
             for (int i = 0; i < totalPages; i++)
             {
                 PdfPage page = pdfDoc.Pages[i];
                 XGraphics pgGfx = XGraphics.FromPdfPage(page);
-                double footerY = pageHeight - 60;
+                double fy = pageHeight - 58;
                 string pageInfo = $"Page {i + 1} of {totalPages}";
-                XRect pageRect = new XRect(margin, footerY + 30, printableWidth, 10);
-                pgGfx.DrawString(pageInfo, smallFont, grayBrush, pageRect, XStringFormats.Center);
+                pgGfx.DrawString(pageInfo, smallFont, grayBrush, margin + printableWidth / 2 - 20, fy + 26);
                 pgGfx.Dispose();
             }
 
