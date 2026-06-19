@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -1428,295 +1429,583 @@ public class InvoicePreviewForm : Form
                     btnPdf.Enabled = false;
                     btnPdf.Text = "Generating PDF...";
 
-                    // Ensure UI layout is up-to-date before capture
-                    AdjustInvoiceHeight();
-                    Application.DoEvents();
+                    string filePath = sfd.FileName;
+                    await Task.Run(() => GenerateVectorPdf(filePath));
 
-                    // Capture the invoice bitmap on the UI thread to avoid cross-thread DrawToBitmap issues
-                    Bitmap captured = null;
-                    try
-                    {
-                        // Hide the on-screen footer while capturing to avoid duplicating footer in the generated PDF
-                        bool prevFooterVisible = footerPanel?.Visible ?? false;
-                        try
-                        {
-                            // ── PDF CAPTURE: temporarily shrink panel to fixed width for good PDF scale ──
-                            int prevPanelWidth = pnlInvoice.Width;
-                            float captureDpiScale = 1.0f;
-                            using (Graphics g = this.CreateGraphics())
-                            {
-                                captureDpiScale = g.DpiX / 96.0f;
-                            }
-                            int pdfCaptureWidth = (int)Math.Round(1100 * captureDpiScale);
-                            try
-                             {
-                                 pnlInvoice.Width = pdfCaptureWidth;
-                                 pnlInvoice.PerformLayout();
-                                 mainPanel.Width = pnlInvoice.ClientSize.Width - pnlInvoice.Padding.Left - pnlInvoice.Padding.Right;
-                                 mainPanel.PerformLayout();
-                                 dgvItems.Width = mainPanel.ClientSize.Width - mainPanel.Padding.Left - mainPanel.Padding.Right;
-
-                                 // Force DataGridView columns to recalculate their widths at the new capture width
-                                 dgvItems.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
-                                 dgvItems.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-                                 dgvItems.PerformLayout();
-
-                                 AdjustInvoiceHeight();
-                                 Application.DoEvents();
-                                 Application.DoEvents();
-                                 footerPanel.Visible = false;
-                                 captured = CaptureInvoiceBitmap();
-                             }
-                             finally
-                             {
-                                 // Always restore panel width
-                                 footerPanel.Visible = prevFooterVisible;
-                                 pnlInvoice.Width = prevPanelWidth;
-                                 pnlInvoice.PerformLayout();
-                                 mainPanel.Width = pnlInvoice.ClientSize.Width - pnlInvoice.Padding.Left - pnlInvoice.Padding.Right;
-                                 mainPanel.PerformLayout();
-                                 dgvItems.Width = mainPanel.ClientSize.Width - mainPanel.Padding.Left - mainPanel.Padding.Right;
-
-                                 // Restore normal on-screen column scaling
-                                 dgvItems.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
-                                 dgvItems.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-                                 dgvItems.PerformLayout();
-
-                                 AdjustInvoiceHeight();
-                                 Application.DoEvents();
-                             }
-                            // ──────────────────────────────────────────────────────────────────────────
-
-                            if (captured == null)
-                            {
-                                ShowErrorMessage("Failed to capture invoice for PDF generation");
-                                return;
-                            }
-
-                            // Clone the bitmap so we can safely pass it to a background thread
-                            Bitmap invoiceBitmapForTask = (Bitmap)captured.Clone();
-                            captured.Dispose();
-
-                            // Use async task to generate PDF without blocking UI
-                            await Task.Run(() => GenerateProfessionalPdf(sfd.FileName, invoiceBitmapForTask));
-
-                            ShowInfoMessage("PDF saved successfully!", "Success");
-                        }
-                        finally
-                        {
-                            if (footerPanel != null) footerPanel.Visible = prevFooterVisible;
-                        }
-                    }
-                    finally
-                    {
-                        isGeneratingPdf = false;
-                        btnPdf.Enabled = true;
-                        btnPdf.Text = "📄 Download PDF";
-                        captured?.Dispose();
-                    }
+                    ShowInfoMessage("PDF saved successfully!", "Success");
                 }
             }
         }
         catch (Exception ex)
         {
             ShowErrorMessage($"PDF generation failed: {ex.Message}");
+        }
+        finally
+        {
             isGeneratingPdf = false;
             btnPdf.Enabled = true;
             btnPdf.Text = "📄 Download PDF";
         }
     }
 
-    // Overload that accepts a pre-captured bitmap
-    private void GenerateProfessionalPdf(string filePath, Bitmap invoiceBitmap)
+    private void GenerateVectorPdf(string filePath)
     {
         PdfDocument pdfDoc = null;
-        XGraphics gfx = null;
-
         try
         {
             pdfDoc = new PdfDocument();
             pdfDoc.Info.Title = $"Invoice {invoiceId}";
-            pdfDoc.Info.Author = "HCR";
+            pdfDoc.Info.Author = "HCR E-Invoicing System";
             pdfDoc.Info.CreationDate = DateTime.Now;
 
-            if (invoiceBitmap == null)
-                throw new Exception("Invoice bitmap is null");
-
-            // Trim trailing blank area (white/near-white) to avoid tiny last page
-            invoiceBitmap = TrimBottomWhitespace(invoiceBitmap, 10);
-
-            // A4 dimensions in points
-            double pageWidth = 595.0;
-            double pageHeight = 842.0;
-            double margin = 25;
-            double availableHeight = pageHeight - (2 * margin) - 50; // Reserve space for footer
-
-            // Calculate scale
-            double scale = (pageWidth - (2 * margin)) / invoiceBitmap.Width;
-            double scaledHeight = invoiceBitmap.Height * scale;
-            int estimatedPages = (int)Math.Ceiling(scaledHeight / availableHeight);
-            if (estimatedPages < 1) estimatedPages = 1;
-
-            // Compute page source heights in image pixels to avoid tiny last page
-            int step = Math.Max(1, (int)Math.Round(availableHeight / scale)); // source pixels per page
-
-            // We'll generate pages dynamically to avoid gaps when snapping to separators
-            int srcY = 0;
-            int pageNum = 0;
-            int overlapPixelsBase = Math.Min(120, (int)Math.Round(30 / scale));
-
-            while (srcY < invoiceBitmap.Height)
+            // Load data
+            DataSet ds = DatabaseHelper.GetInvoicePreviewData(invoiceId);
+            if (ds == null || ds.Tables.Count == 0 || ds.Tables["InvoiceHeader"].Rows.Count == 0)
             {
-                // remaining pixels
-                int remaining = invoiceBitmap.Height - srcY;
-
-                // Start of this slice (do NOT include upward overlap in drawing — overlap is used only for searching separator)
-                int currentSrc = srcY;
-
-                // Base desired source height (pixels) for this page
-                int desiredHeight = Math.Min(step, remaining);
-
-                int actualBottom = currentSrc + desiredHeight; // exclusive bottom y
-
-                // For non-last pages try to snap the bottom of this slice to a nearby horizontal separator to avoid cutting rows
-                if (actualBottom < invoiceBitmap.Height)
-                {
-                    int approxBottom = actualBottom;
-                    int searchRange = Math.Max(20, overlapPixelsBase * 2);
-
-                    // Use a slightly extended search area that may go above the approxBottom (but do not include above currentSrc for drawing)
-                    int searchTop = Math.Max(0, approxBottom - searchRange);
-                    int searchBottom = Math.Min(invoiceBitmap.Height - 1, approxBottom + searchRange);
-
-                    int sep = FindHorizontalSeparator(invoiceBitmap, searchTop, searchBottom);
-                    if (sep > currentSrc + 10)
-                    {
-                        // snap to separator line (include the separator row)
-                        actualBottom = Math.Min(invoiceBitmap.Height, sep + 1);
-                    }
-                    else
-                    {
-                        // no separator found: extend a little to avoid cutting rows
-                        actualBottom = Math.Min(invoiceBitmap.Height, currentSrc + desiredHeight + Math.Min(overlapPixelsBase / 2, invoiceBitmap.Height - (currentSrc + desiredHeight)));
-                    }
-                }
-
-                // Ensure height is at least 1 pixel
-                int srcHeight = Math.Max(1, actualBottom - currentSrc);
-
-                PdfPage page = pdfDoc.AddPage();
-                gfx = XGraphics.FromPdfPage(page);
-
-                using (Bitmap pageBmp = new Bitmap(invoiceBitmap.Width, srcHeight))
-                {
-                    pageBmp.SetResolution(300f, 300f);
-                    using (Graphics g = Graphics.FromImage(pageBmp))
-                    {
-                        g.Clear(Color.White);
-                        g.DrawImage(invoiceBitmap,
-                            new Rectangle(0, 0, invoiceBitmap.Width, srcHeight),
-                            new Rectangle(0, currentSrc, invoiceBitmap.Width, srcHeight),
-                            GraphicsUnit.Pixel);
-                    }
-
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        pageBmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-                        ms.Position = 0;
-                        XImage img = null;
-                        try
-                        {
-                            img = XImage.FromStream(ms);
-                            gfx.DrawImage(img, margin, margin,
-                                invoiceBitmap.Width * scale, pageBmp.Height * scale);
-                        }
-                        finally
-                        {
-                            img?.Dispose();
-                        }
-                    }
-                }
-
-                // Draw footer on all pages
-                double footerY = pageHeight - margin - 35;
-                gfx.DrawLine(new XPen(XColor.FromArgb(220, 220, 220), 0.5),
-                    margin, footerY, pageWidth - margin, footerY);
-
-                // Render footer text to a bitmap and draw it to PDF to avoid font embedding problems
-                string footerText = !string.IsNullOrWhiteSpace(currentInvoiceFooter) ? currentInvoiceFooter : "Phone: +92 51 6144660 | Mobile: +92 300 230 2463, +92 332 5494660 | Email: usmanenterprises63@gmail.com";
-                try
-                {
-                    int dpi = 150;
-                    double footerWidthPoints = pageWidth - 2 * margin; // in points
-                    int bmpWidth = Math.Max(1, (int)Math.Ceiling(footerWidthPoints * dpi / 72.0));
-                    int bmpHeight = Math.Max(1, (int)Math.Ceiling(24 * dpi / 72.0));
-
-                    using (Bitmap footerBmp = new Bitmap(bmpWidth, bmpHeight))
-                    {
-                        footerBmp.SetResolution(dpi, dpi);
-                        using (Graphics g = Graphics.FromImage(footerBmp))
-                        {
-                            g.Clear(Color.Transparent);
-                            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-
-                            using (Font drawFont = new Font("Segoe UI", 8.5f, FontStyle.Regular, GraphicsUnit.Point))
-                            using (Brush drawBrush = new SolidBrush(Color.FromArgb(100, 100, 100)))
-                            {
-                                SizeF sz = g.MeasureString(footerText, drawFont);
-                                float x = (footerBmp.Width - sz.Width) / 2f;
-                                float y = (footerBmp.Height - sz.Height) / 2f;
-                                g.DrawString(footerText, drawFont, drawBrush, x, y);
-                            }
-                        }
-
-                        using (MemoryStream msFooter = new MemoryStream())
-                        {
-                            footerBmp.Save(msFooter, System.Drawing.Imaging.ImageFormat.Png);
-                            msFooter.Position = 0;
-                            using (XImage xf = XImage.FromStream(msFooter))
-                            {
-                                double imgWidthPoints = footerWidthPoints;
-                                double imgHeightPoints = footerBmp.Height * 72.0 / dpi;
-                                gfx.DrawImage(xf, margin, footerY + 4, imgWidthPoints, imgHeightPoints);
-                            }
-                        }
-                    }
-
-                    // Page number below footer
-                    string pageInfo = $"Page {pageNum + 1} of " + ""; // placeholder updated below
-                    XFont pageFont = new XFont("Arial", 7);
-                    XRect pageRect = new XRect(margin, footerY + 18, pageWidth - 2 * margin, 12);
-                    gfx.DrawString(pageInfo, pageFont, XBrushes.Black, pageRect, XStringFormats.Center);
-                }
-                catch (Exception exFooter)
-                {
-                    Console.WriteLine("Footer render failed: " + exFooter.Message);
-                }
-
-                gfx?.Dispose();
-
-                // advance srcY to the next slice (no duplication): start at actualBottom
-                srcY = actualBottom;
-                pageNum++;
+                throw new Exception("Invoice not found in database.");
             }
 
-            // After generation we don't know total pages until now; reopen and set page numbers correctly
-            // (The simple approach used here writes page numbers as-is per page generation; for accurate total page count
-            // a second pass or precollection would be required. It's left as-is to avoid complexity.)
+            DataRow header = ds.Tables["InvoiceHeader"].Rows[0];
+            DataTable items = ds.Tables["InvoiceItems"];
 
+            // Colors
+            XColor navyColor = XColor.FromArgb(30, 60, 114);
+            XColor grayColor = XColor.FromArgb(74, 85, 104);
+            XColor lightBgColor = XColor.FromArgb(248, 250, 252);
+            XColor lightBorderColor = XColor.FromArgb(226, 232, 240);
+            XColor darkTextColor = XColor.FromArgb(45, 55, 72);
+            XColor lineSeparatorColor = XColor.FromArgb(203, 213, 225);
+
+            XBrush navyBrush = new XSolidBrush(navyColor);
+            XBrush grayBrush = new XSolidBrush(grayColor);
+            XBrush darkTextBrush = new XSolidBrush(darkTextColor);
+            XBrush whiteBrush = XBrushes.White;
+            XBrush lightBgBrush = new XSolidBrush(lightBgColor);
+
+            XPen borderPen = new XPen(lightBorderColor, 1);
+            XPen linePen = new XPen(lineSeparatorColor, 0.75);
+
+            // Fonts
+            XFont titleFont = new XFont("Arial", 16, XFontStyleEx.Bold);
+            XFont headingFont = new XFont("Arial", 10, XFontStyleEx.Bold);
+            XFont boldFont = new XFont("Arial", 8.5, XFontStyleEx.Bold);
+            XFont regularFont = new XFont("Arial", 8.5, XFontStyleEx.Regular);
+            XFont smallFont = new XFont("Arial", 7.5, XFontStyleEx.Regular);
+            XFont italicFont = new XFont("Arial", 8, XFontStyleEx.Italic);
+            XFont tableHeaderFont = new XFont("Arial", 8, XFontStyleEx.Bold);
+            XFont tableBodyFont = new XFont("Arial", 8, XFontStyleEx.Regular);
+
+            // Layout settings
+            double pageWidth = 595.0;  // A4 Width
+            double pageHeight = 842.0; // A4 Height
+            double margin = 36.0;      // 0.5 inch margins
+            double printableWidth = pageWidth - 2 * margin; // 523pt
+            double contentLimitY = 730.0; // Page break threshold (leave room for totals and page footer)
+
+            int pageNum = 0;
+            double currentY = 0;
+            XGraphics gfx = null;
+
+            // Header drawing helper
+            Action drawHeader = () =>
+            {
+                // Compact header for page 2+
+                if (pageNum > 1)
+                {
+                    gfx.DrawString("SALES TAX INVOICE", headingFont, navyBrush, margin, 40);
+                    gfx.DrawString($"Invoice #: {header["invoiceNumber"]}", regularFont, darkTextBrush, margin, 55);
+                    gfx.DrawString($"FBR Invoice #: {header["fbrInvoiceNumber"]}", regularFont, darkTextBrush, margin + 150, 55);
+                    string invDateStr = header["invoiceDate"] != DBNull.Value ? Convert.ToDateTime(header["invoiceDate"]).ToString("yyyy-MM-dd") : "";
+                    gfx.DrawString($"Date: {invDateStr}", regularFont, darkTextBrush, margin + 350, 55);
+                    gfx.DrawLine(new XPen(navyColor, 1), margin, 68, margin + printableWidth, 68);
+                    currentY = 80;
+                    return;
+                }
+
+                // First page header (full styling)
+                // Draw Seller Logo on the left
+                double logoY = 40;
+                double logoHeight = 45;
+                bool hasLogo = false;
+                try
+                {
+                    if (header.Table.Columns.Contains("sellerLogoPath") && header["sellerLogoPath"] != DBNull.Value)
+                    {
+                        byte[] logoBytes = (byte[])header["sellerLogoPath"];
+                        using (MemoryStream ms = new MemoryStream(logoBytes))
+                        {
+                            using (Image img = Image.FromStream(ms))
+                            {
+                                using (MemoryStream imgMs = new MemoryStream())
+                                {
+                                    img.Save(imgMs, ImageFormat.Png);
+                                    imgMs.Position = 0;
+                                    XImage xLogo = XImage.FromStream(imgMs);
+                                    
+                                    // Scale aspect ratio
+                                    double aspect = (double)img.Width / img.Height;
+                                    double drawWidth = logoHeight * aspect;
+                                    if (drawWidth > 180) drawWidth = 180;
+                                    gfx.DrawImage(xLogo, margin, logoY, drawWidth, logoHeight);
+                                    hasLogo = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error rendering seller logo in PDF: " + ex.Message);
+                }
+
+                if (!hasLogo)
+                {
+                    // Fallback to seller name
+                    string sName = header["sellerBusinessName"]?.ToString() ?? "HCR BUSINESS";
+                    gfx.DrawString(sName, new XFont("Arial", 14, XFontStyleEx.Bold), navyBrush, margin, logoY + 15);
+                }
+
+                // Title
+                gfx.DrawString("SALES TAX INVOICE", titleFont, navyBrush, margin + 180, 55);
+
+                // Right side: FBR logo & QR code
+                double rightX = margin + printableWidth;
+                
+                // Draw FBR verification QR code
+                string fbrInvoiceNo = header["fbrInvoiceNumber"]?.ToString();
+                bool hasQr = false;
+                if (!string.IsNullOrEmpty(fbrInvoiceNo))
+                {
+                    try
+                    {
+                        string qrData = $"https://www.fbr.gov.pk/verifyInvoice?invoice={fbrInvoiceNo}";
+                        using (QRCodeGenerator qrGen = new QRCodeGenerator())
+                        {
+                            QRCodeData qrDataObj = qrGen.CreateQrCode(qrData, QRCodeGenerator.ECCLevel.Q);
+                            using (QRCode qrCode = new QRCode(qrDataObj))
+                            {
+                                using (Bitmap qrBmp = qrCode.GetGraphic(8))
+                                {
+                                    using (MemoryStream qrMs = new MemoryStream())
+                                    {
+                                        qrBmp.Save(qrMs, ImageFormat.Png);
+                                        qrMs.Position = 0;
+                                        XImage qrImg = XImage.FromStream(qrMs);
+                                        gfx.DrawImage(qrImg, rightX - 50, 40, 50, 50);
+                                        hasQr = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Error rendering QR code in PDF: " + ex.Message);
+                    }
+                }
+
+                // Draw FBR Digital Logo
+                try
+                {
+                    string fbrPath = Path.Combine(Application.StartupPath, "FBR_DIGITAL.PNG");
+                    if (File.Exists(fbrPath))
+                    {
+                        using (Image img = Image.FromFile(fbrPath))
+                        {
+                            using (MemoryStream fbrMs = new MemoryStream())
+                            {
+                                img.Save(fbrMs, ImageFormat.Png);
+                                fbrMs.Position = 0;
+                                XImage fbrImg = XImage.FromStream(fbrMs);
+                                double fbrX = hasQr ? rightX - 110 : rightX - 50;
+                                gfx.DrawImage(fbrImg, fbrX, 40, 50, 50);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error rendering FBR logo in PDF: " + ex.Message);
+                }
+
+                // Under FBR/QR section notice
+                gfx.DrawString("Computer generated invoice. No signature or stamp required.", italicFont, grayBrush, margin, 105);
+
+                // Meta row: Date, Invoice number, FBR number, status
+                currentY = 125;
+                gfx.DrawLine(new XPen(navyColor, 1.5), margin, currentY, margin + printableWidth, currentY);
+                currentY += 15;
+
+                // Two columns for meta data
+                gfx.DrawString($"Invoice Number: {header["invoiceNumber"]}", boldFont, darkTextBrush, margin, currentY);
+                string dateStr = header["invoiceDate"] != DBNull.Value ? Convert.ToDateTime(header["invoiceDate"]).ToString("yyyy-MM-dd HH:mm") : "";
+                gfx.DrawString($"Invoice Date: {dateStr}", regularFont, darkTextBrush, margin + 280, currentY);
+                currentY += 14;
+
+                gfx.DrawString($"FBR Invoice Number: {header["fbrInvoiceNumber"]}", regularFont, darkTextBrush, margin, currentY);
+                
+                // Status colorized
+                string invoiceStatus = header["status"]?.ToString() ?? "Unpaid";
+                bool isPaid = invoiceStatus.Equals("Paid", StringComparison.OrdinalIgnoreCase);
+                XBrush statusBrush = isPaid ? new XSolidBrush(XColor.FromArgb(72, 187, 120)) : new XSolidBrush(XColor.FromArgb(229, 62, 62));
+                gfx.DrawString($"Payment Status: {invoiceStatus.ToUpper()}", boldFont, statusBrush, margin + 280, currentY);
+
+                currentY += 20;
+
+                // Seller and Buyer Boxes side-by-side
+                double boxWidth = 250;
+                double boxHeight = 100;
+                double sellerX = margin;
+                double buyerX = margin + printableWidth - boxWidth;
+                double boxY = currentY;
+
+                // Draw Seller Box
+                gfx.DrawRectangle(borderPen, lightBgBrush, sellerX, boxY, boxWidth, boxHeight);
+                gfx.DrawString("Seller Information", headingFont, navyBrush, sellerX + 10, boxY + 18);
+                
+                string sBiz = header["sellerBusinessName"]?.ToString() ?? "";
+                string sNtn = $"NTN/CNIC: {header["sellerNTNCNIC"]}";
+                string sProv = $"Province: {header["sellerProvince"]}";
+                string sAddr = $"Address: {header["sellerAddress"]}";
+                
+                gfx.DrawString(sBiz, boldFont, darkTextBrush, sellerX + 10, boxY + 33);
+                gfx.DrawString(sNtn, regularFont, darkTextBrush, sellerX + 10, boxY + 47);
+                gfx.DrawString(sProv, regularFont, darkTextBrush, sellerX + 10, boxY + 61);
+                
+                // Wrap and draw seller address
+                List<string> sAddrLines = WrapText(sAddr, boxWidth - 20, regularFont, gfx);
+                double addrY = boxY + 75;
+                for (int idx = 0; idx < Math.Min(sAddrLines.Count, 2); idx++)
+                {
+                    gfx.DrawString(sAddrLines[idx], regularFont, darkTextBrush, sellerX + 10, addrY);
+                    addrY += 11;
+                }
+
+                // Draw Buyer Box
+                gfx.DrawRectangle(borderPen, lightBgBrush, buyerX, boxY, boxWidth, boxHeight);
+                gfx.DrawString("Buyer Information", headingFont, navyBrush, buyerX + 10, boxY + 18);
+
+                string cBiz = header["customerBusinessName"]?.ToString() ?? "";
+                string cNtn = $"NTN/CNIC: {header["customerNTNCNIC"]}";
+                string cProv = $"Province: {header["customerProvince"]}";
+                string cAddr = $"Address: {header["customerAddress"]}";
+
+                gfx.DrawString(cBiz, boldFont, darkTextBrush, buyerX + 10, boxY + 33);
+                gfx.DrawString(cNtn, regularFont, darkTextBrush, buyerX + 10, boxY + 47);
+                gfx.DrawString(cProv, regularFont, darkTextBrush, buyerX + 10, boxY + 61);
+
+                // Wrap and draw buyer address
+                List<string> cAddrLines = WrapText(cAddr, boxWidth - 20, regularFont, gfx);
+                addrY = boxY + 75;
+                for (int idx = 0; idx < Math.Min(cAddrLines.Count, 2); idx++)
+                {
+                    gfx.DrawString(cAddrLines[idx], regularFont, darkTextBrush, buyerX + 10, addrY);
+                    addrY += 11;
+                }
+
+                currentY += boxHeight + 20;
+            };
+
+            // Function to add a page
+            Action addPage = () =>
+            {
+                PdfPage page = pdfDoc.AddPage();
+                page.Size = PdfSharp.PageSize.A4;
+                gfx = XGraphics.FromPdfPage(page);
+                pageNum++;
+                drawHeader();
+            };
+
+            // Add first page
+            addPage();
+
+            // Column Widths
+            // HS Code, Description, Unit Price, Qty, Gross, Disc, Excl Tax, Tax %, Tax Val, Incl Tax
+            double[] colWidths = { 40.0, 133.0, 42.0, 25.0, 45.0, 42.0, 52.0, 28.0, 52.0, 64.0 };
+            double[] colX = new double[colWidths.Length];
+            colX[0] = margin;
+            for (int i = 1; i < colWidths.Length; i++)
+            {
+                colX[i] = colX[i - 1] + colWidths[i - 1];
+            }
+
+            string[] headers = { "Item Code", "Item Description", "Unit Price", "Qty", "Gross", "Discount", "Amt Excl.", "Tax%", "S.Tax Val", "Amt Incl." };
+
+            // Helper to draw table header row
+            Action drawTableHeaderRow = () =>
+            {
+                // Draw header background band
+                gfx.DrawRectangle(navyBrush, margin, currentY, printableWidth, 22);
+                
+                for (int i = 0; i < colWidths.Length; i++)
+                {
+                    XStringFormat format = XStringFormats.CenterRight;
+                    if (i == 0) format = XStringFormats.Center;
+                    else if (i == 1) format = XStringFormats.CenterLeft;
+
+                    double xPos = colX[i];
+                    if (format == XStringFormats.Center) xPos += colWidths[i] / 2;
+                    else if (format == XStringFormats.CenterRight) xPos += colWidths[i] - 4;
+                    else if (format == XStringFormats.CenterLeft) xPos += 4;
+
+                    gfx.DrawString(headers[i], tableHeaderFont, whiteBrush, xPos, currentY + 11, format);
+                }
+                currentY += 22;
+            };
+
+            // Draw first table header
+            drawTableHeaderRow();
+
+            // Draw invoice items
+            int itemIndex = 0;
+            foreach (DataRow row in items.Rows)
+            {
+                decimal qty = ParseDecimal(row["quantity"]);
+                decimal unitPrice = ParseDecimal(row["unitPrice"]);
+                decimal rate = items.Columns.Contains("rate") ? ParseDecimal(row["rate"]) : 0m;
+                decimal discount = items.Columns.Contains("discount") ? ParseDecimal(row["discount"]) : 0m;
+
+                string description = "";
+                if (row["description"] != DBNull.Value && !string.IsNullOrWhiteSpace(row["description"].ToString()))
+                {
+                    description = row["description"].ToString();
+                }
+                else if (row["productDescription"] != DBNull.Value)
+                {
+                    description = row["productDescription"].ToString();
+                }
+
+                decimal totalGross = qty * unitPrice;
+                decimal totalEx = totalGross - discount;
+                if (totalEx < 0m) totalEx = 0m;
+                decimal taxValue = totalEx * rate / 100m;
+                decimal totalInc = totalEx + taxValue;
+
+                string hsCode = row["hsCode"]?.ToString() ?? "";
+
+                // Wrap description text
+                List<string> descLines = WrapText(description, colWidths[1] - 8, tableBodyFont, gfx);
+                if (descLines.Count == 0) descLines.Add("");
+
+                // Calculate row height
+                double rowHeight = Math.Max(18, descLines.Count * 11) + 4;
+
+                // Check for page overflow
+                if (currentY + rowHeight > contentLimitY)
+                {
+                    // Draw border line at the bottom of the table on current page
+                    gfx.DrawLine(borderPen, margin, currentY, margin + printableWidth, currentY);
+                    
+                    // Add new page
+                    addPage();
+                    drawTableHeaderRow();
+                }
+
+                // Alternate row colors
+                XBrush rowBrush = (itemIndex % 2 == 0) ? whiteBrush : lightBgBrush;
+                gfx.DrawRectangle(borderPen, rowBrush, margin, currentY, printableWidth, rowHeight);
+
+                // Draw cell contents
+                // 1. hsCode
+                gfx.DrawString(hsCode, tableBodyFont, darkTextBrush, colX[0] + colWidths[0]/2, currentY + rowHeight/2, XStringFormats.Center);
+
+                // 2. description (multiline)
+                double descY = currentY + 11;
+                for (int l = 0; l < descLines.Count; l++)
+                {
+                    gfx.DrawString(descLines[l], tableBodyFont, darkTextBrush, colX[1] + 4, descY, XStringFormats.CenterLeft);
+                    descY += 11;
+                }
+
+                // Numbers: Unit Price, Qty, Gross, Discount, Amt Excl, Tax %, S.Tax Val, Amt Incl
+                gfx.DrawString($"{unitPrice:N2}", tableBodyFont, darkTextBrush, colX[2] + colWidths[2] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
+                gfx.DrawString($"{qty:N0}", tableBodyFont, darkTextBrush, colX[3] + colWidths[3] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
+                gfx.DrawString($"{totalGross:N2}", tableBodyFont, darkTextBrush, colX[4] + colWidths[4] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
+                gfx.DrawString($"{discount:N2}", tableBodyFont, darkTextBrush, colX[5] + colWidths[5] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
+                gfx.DrawString($"{totalEx:N2}", tableBodyFont, darkTextBrush, colX[6] + colWidths[6] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
+                gfx.DrawString($"{rate:0.##}%", tableBodyFont, darkTextBrush, colX[7] + colWidths[7] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
+                gfx.DrawString($"{taxValue:N2}", tableBodyFont, darkTextBrush, colX[8] + colWidths[8] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
+                gfx.DrawString($"{totalInc:N2}", tableBodyFont, darkTextBrush, colX[9] + colWidths[9] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
+
+                currentY += rowHeight;
+                itemIndex++;
+            }
+
+            // Draw table bottom boundary line
+            gfx.DrawLine(new XPen(navyColor, 1), margin, currentY, margin + printableWidth, currentY);
+
+            // Calculations for totals
+            decimal subTotal = 0, totalTax = 0, furtherTax = 0, grandTotal = 0;
+            foreach (DataRow row in items.Rows)
+            {
+                decimal qty = ParseDecimal(row["quantity"]);
+                decimal unitPrice = ParseDecimal(row["unitPrice"]);
+                decimal rate = items.Columns.Contains("rate") ? ParseDecimal(row["rate"]) : 0m;
+                decimal discount = items.Columns.Contains("discount") ? ParseDecimal(row["discount"]) : 0m;
+                decimal further = items.Columns.Contains("furtherTax") ? ParseDecimal(row["furtherTax"]) : 0m;
+
+                decimal totalGross = qty * unitPrice;
+                decimal totalEx = totalGross - discount;
+                if (totalEx < 0m) totalEx = 0m;
+                decimal taxValue = totalEx * rate / 100m;
+                decimal totalInc = totalEx + taxValue;
+
+                subTotal += totalEx;
+                totalTax += taxValue;
+                furtherTax += further;
+                grandTotal += totalInc;
+            }
+            decimal invoiceTotalAmount = grandTotal + furtherTax;
+
+            string invoiceStatusStr = header["status"]?.ToString() ?? "Unpaid";
+            bool isInvoicePaid = invoiceStatusStr.Equals("Paid", StringComparison.OrdinalIgnoreCase);
+            decimal invoicePaidAmt = header.Table.Columns.Contains("paidAmount") && header["paidAmount"] != DBNull.Value ? ParseDecimal(header["paidAmount"]) : 0m;
+            if (isInvoicePaid) invoicePaidAmt = invoiceTotalAmount;
+            decimal invoiceDueAmt = Math.Max(0m, invoiceTotalAmount - invoicePaidAmt);
+
+            // Draw Totals Block
+            double totalsHeight = 85;
+            if (invoiceDueAmt > 0) totalsHeight = 100; // room for due amount
+
+            // Page break check for totals
+            if (currentY + totalsHeight > contentLimitY)
+            {
+                addPage();
+            }
+
+            currentY += 15;
+            double totalsWidth = 230;
+            double totalsX = margin + printableWidth - totalsWidth;
+
+            // Draw a subtle border for totals box
+            gfx.DrawRectangle(borderPen, lightBgBrush, totalsX, currentY, totalsWidth, totalsHeight);
+
+            double rowY = currentY + 15;
+            Action<string, string, bool, XBrush> drawTotalRow = (label, val, isBold, valBrush) =>
+            {
+                XFont lblFont = isBold ? boldFont : regularFont;
+                XFont vFont = isBold ? boldFont : regularFont;
+                XBrush brushVal = valBrush ?? darkTextBrush;
+
+                gfx.DrawString(label, lblFont, darkTextBrush, totalsX + 15, rowY);
+                gfx.DrawString(val, vFont, brushVal, totalsX + totalsWidth - 15, rowY, XStringFormats.CenterRight);
+                rowY += 16;
+            };
+
+            drawTotalRow("Subtotal:", $"{subTotal:N2}", false, null);
+            drawTotalRow("Sales Tax:", $"{totalTax:N2}", false, null);
+            if (furtherTax > 0)
+            {
+                drawTotalRow("Further Tax:", $"{furtherTax:N2}", false, null);
+            }
+            drawTotalRow("Grand Total:", $"{invoiceTotalAmount:N2}", true, navyBrush);
+
+            if (invoiceDueAmt > 0)
+            {
+                drawTotalRow("Due Amount:", $"{invoiceDueAmt:N2}", true, new XSolidBrush(XColor.FromArgb(229, 62, 62)));
+            }
+
+            // Draw dynamic notes if present
+            string notes = header["notes"]?.ToString() ?? "";
+            if (!string.IsNullOrWhiteSpace(notes))
+            {
+                double notesY = currentY + 15;
+                if (notesY + 40 < pageHeight - 100)
+                {
+                    gfx.DrawString("Notes:", boldFont, navyBrush, margin, notesY);
+                    List<string> noteLines = WrapText(notes, 250, regularFont, gfx);
+                    double nLineY = notesY + 15;
+                    for (int idx = 0; idx < Math.Min(noteLines.Count, 3); idx++)
+                    {
+                        gfx.DrawString(noteLines[idx], regularFont, darkTextBrush, margin, nLineY);
+                        nLineY += 12;
+                    }
+                }
+            }
+
+            // SECOND PASS: Draw footers and page numbers on all pages
+            int totalPages = pdfDoc.Pages.Count;
+            for (int i = 0; i < totalPages; i++)
+            {
+                PdfPage page = pdfDoc.Pages[i];
+                XGraphics footerGfx = XGraphics.FromPdfPage(page);
+
+                double footerY = pageHeight - 55;
+
+                // Separator line
+                footerGfx.DrawLine(new XPen(XColor.FromArgb(226, 232, 240), 1), margin, footerY, margin + printableWidth, footerY);
+
+                // Footer Text
+                string fText = !string.IsNullOrWhiteSpace(currentInvoiceFooter) ? currentInvoiceFooter : "Phone: +92 51 6144660 | Mobile: +92 300 230 2463, +92 332 5494660 | Email: usmanenterprises63@gmail.com";
+                XRect footerRect = new XRect(margin, footerY + 5, printableWidth, 15);
+                footerGfx.DrawString(fText, smallFont, grayBrush, footerRect, XStringFormats.Center);
+
+                // Computer generated notice
+                XRect computerGeneratedRect = new XRect(margin, footerY + 18, printableWidth, 12);
+                footerGfx.DrawString("This is a computer generated invoice. No signature or stamp required.", smallFont, grayBrush, computerGeneratedRect, XStringFormats.Center);
+
+                // Page numbers
+                string pageInfo = $"Page {i + 1} of {totalPages}";
+                XRect pageRect = new XRect(margin, footerY + 30, printableWidth, 10);
+                footerGfx.DrawString(pageInfo, smallFont, grayBrush, pageRect, XStringFormats.Center);
+
+                footerGfx.Dispose();
+            }
+
+            // Save PDF
             pdfDoc.Save(filePath);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"PDF generation failed: {ex.Message}");
-            ShowErrorMessage($"Failed to generate PDF: {ex.Message}");
+            Console.WriteLine("PDF Generation failed: " + ex.Message);
+            throw;
         }
         finally
         {
-            gfx?.Dispose();
             pdfDoc?.Dispose();
-            invoiceBitmap?.Dispose();
         }
+    }
+
+    private List<string> WrapText(string text, double maxWidth, XFont font, XGraphics gfx)
+    {
+        List<string> lines = new List<string>();
+        if (string.IsNullOrEmpty(text))
+            return lines;
+
+        string[] paragraphs = text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+        foreach (var paragraph in paragraphs)
+        {
+            string[] words = paragraph.Split(' ');
+            string currentLine = "";
+
+            foreach (var word in words)
+            {
+                string testLine = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
+                XSize size = gfx.MeasureString(testLine, font);
+                if (size.Width > maxWidth)
+                {
+                    if (!string.IsNullOrEmpty(currentLine))
+                    {
+                        lines.Add(currentLine);
+                        currentLine = word;
+                    }
+                    else
+                    {
+                        lines.Add(word);
+                        currentLine = "";
+                    }
+                }
+                else
+                {
+                    currentLine = testLine;
+                }
+            }
+            if (!string.IsNullOrEmpty(currentLine))
+            {
+                lines.Add(currentLine);
+            }
+        }
+        return lines;
     }
 
     // Trim bottom whitespace (near-white) from bitmap
