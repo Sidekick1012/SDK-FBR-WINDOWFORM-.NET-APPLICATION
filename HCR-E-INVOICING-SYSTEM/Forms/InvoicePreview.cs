@@ -1503,7 +1503,13 @@ public class InvoicePreviewForm : Form
             double pageHeight = 842.0; // A4 Height
             double margin = 36.0;      // 0.5 inch margins
             double printableWidth = pageWidth - 2 * margin; // 523pt
-            double contentLimitY = 730.0; // Page break threshold (leave room for totals and page footer)
+            double contentLimitY = 745.0; // Page break threshold (leave room for totals and footer)
+
+            // Read footer text directly from DB header (safe for background thread)
+            string pdfFooterText = header.Table.Columns.Contains("invoiceFooter") && header["invoiceFooter"] != DBNull.Value
+                ? header["invoiceFooter"].ToString().Replace("\r\n", " | ").Replace("\n", " | ").Trim()
+                : (!string.IsNullOrWhiteSpace(currentInvoiceFooter) ? currentInvoiceFooter : "Phone: +92 51 6144660 | Mobile: +92 300 230 2463 | Email: usmanenterprises63@gmail.com");
+            while (pdfFooterText.Contains(" |  | ")) pdfFooterText = pdfFooterText.Replace(" |  | ", " | ");
 
             int pageNum = 0;
             double currentY = 0;
@@ -1709,9 +1715,27 @@ public class InvoicePreviewForm : Form
                 currentY += boxHeight + 20;
             };
 
+            // Helper: draw footer on current page (called before closing gfx)
+            Action drawPageFooter = () =>
+            {
+                if (gfx == null) return;
+                double footerY = pageHeight - 60;
+                // Separator line
+                gfx.DrawLine(new XPen(XColor.FromArgb(226, 232, 240), 1), margin, footerY, margin + printableWidth, footerY);
+                // Footer text (contact info from DB)
+                XRect fRect = new XRect(margin, footerY + 5, printableWidth, 14);
+                gfx.DrawString(pdfFooterText, smallFont, grayBrush, fRect, XStringFormats.Center);
+                // Computer-generated notice
+                XRect cgRect = new XRect(margin, footerY + 18, printableWidth, 12);
+                gfx.DrawString("This is a computer generated invoice. No signature or stamp required.", smallFont, grayBrush, cgRect, XStringFormats.Center);
+            };
+
             // Function to add a page
             Action addPage = () =>
             {
+                // Draw footer on the current page before leaving it
+                if (gfx != null) drawPageFooter();
+
                 PdfPage page = pdfDoc.AddPage();
                 page.Size = PdfSharp.PageSize.A4;
                 gfx = XGraphics.FromPdfPage(page);
@@ -1926,33 +1950,20 @@ public class InvoicePreviewForm : Form
                 }
             }
 
-            // SECOND PASS: Draw footers and page numbers on all pages
+            // Draw footer on the LAST page (addPage draws it on all pages except the last)
+            drawPageFooter();
+
+            // SECOND PASS: Add page numbers only (footer already drawn inline above)
             int totalPages = pdfDoc.Pages.Count;
             for (int i = 0; i < totalPages; i++)
             {
                 PdfPage page = pdfDoc.Pages[i];
-                XGraphics footerGfx = XGraphics.FromPdfPage(page);
-
-                double footerY = pageHeight - 55;
-
-                // Separator line
-                footerGfx.DrawLine(new XPen(XColor.FromArgb(226, 232, 240), 1), margin, footerY, margin + printableWidth, footerY);
-
-                // Footer Text
-                string fText = !string.IsNullOrWhiteSpace(currentInvoiceFooter) ? currentInvoiceFooter : "Phone: +92 51 6144660 | Mobile: +92 300 230 2463, +92 332 5494660 | Email: usmanenterprises63@gmail.com";
-                XRect footerRect = new XRect(margin, footerY + 5, printableWidth, 15);
-                footerGfx.DrawString(fText, smallFont, grayBrush, footerRect, XStringFormats.Center);
-
-                // Computer generated notice
-                XRect computerGeneratedRect = new XRect(margin, footerY + 18, printableWidth, 12);
-                footerGfx.DrawString("This is a computer generated invoice. No signature or stamp required.", smallFont, grayBrush, computerGeneratedRect, XStringFormats.Center);
-
-                // Page numbers
+                XGraphics pgGfx = XGraphics.FromPdfPage(page);
+                double footerY = pageHeight - 60;
                 string pageInfo = $"Page {i + 1} of {totalPages}";
                 XRect pageRect = new XRect(margin, footerY + 30, printableWidth, 10);
-                footerGfx.DrawString(pageInfo, smallFont, grayBrush, pageRect, XStringFormats.Center);
-
-                footerGfx.Dispose();
+                pgGfx.DrawString(pageInfo, smallFont, grayBrush, pageRect, XStringFormats.Center);
+                pgGfx.Dispose();
             }
 
             // Save PDF
