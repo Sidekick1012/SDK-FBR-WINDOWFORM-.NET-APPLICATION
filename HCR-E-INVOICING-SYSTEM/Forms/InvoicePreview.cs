@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using PdfSharp.Fonts;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -36,12 +37,8 @@ public class InvoicePreviewForm : Form
     private int totalPrintPages = 0;
     private Bitmap[] pageBitmaps = null;
 
-    // Printing fields
+    // Printing fields (legacy — kept for PrintDocument event handler compatibility)
     private PrintDocument invoicePrintDoc;
-    private Bitmap invoicePrintBitmap;
-    private int invoicePrintPageIndex;
-    private int invoicePrintTotalPages;
-    private float invoicePrintScaleFactor = 1.2f;
 
     // Invoice status fields
     private bool invoiceIsPaid = false;
@@ -59,7 +56,6 @@ public class InvoicePreviewForm : Form
     private bool isGeneratingPdf = false;
 
     // PDF generation variables
-    private double[] columnWidths; // Add this line to fix columnWidths error
     private string currentInvoiceFooter = "";
 
     public InvoicePreviewForm(int invoiceId)
@@ -1030,8 +1026,7 @@ public class InvoicePreviewForm : Form
     {
         try
         {
-            btnPrint.Enabled = false;
-            btnPrint.Text = "Preparing...";
+            if (btnPrint != null) { btnPrint.Enabled = false; btnPrint.Text = "Preparing..."; }
             Application.DoEvents();
 
             AdjustInvoiceHeight();
@@ -1185,8 +1180,7 @@ public class InvoicePreviewForm : Form
         }
         finally
         {
-            btnPrint.Enabled = true;
-            btnPrint.Text = "🖨 Print Invoice";
+            if (btnPrint != null) { btnPrint.Enabled = true; btnPrint.Text = "🖨 Print Invoice"; }
         }
     }
 
@@ -1450,6 +1444,15 @@ public class InvoicePreviewForm : Form
 
     private void GenerateVectorPdf(string filePath)
     {
+        try
+        {
+            PdfSharp.Fonts.GlobalFontSettings.UseWindowsFontsUnderWindows = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Failed to set system fonts resolver: " + ex.Message);
+        }
+
         PdfDocument pdfDoc = null;
         try
         {
