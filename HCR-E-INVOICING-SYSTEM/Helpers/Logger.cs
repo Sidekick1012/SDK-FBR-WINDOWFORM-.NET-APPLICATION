@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 
 namespace HCR_E_INVOICING_SYSTEM.Helpers
@@ -15,7 +15,7 @@ namespace HCR_E_INVOICING_SYSTEM.Helpers
                 Directory.CreateDirectory(logDir);
                 string logFile = Path.Combine(logDir, "app.log");
 
-                string entry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {ex}\r\n";
+                string entry = string.Format("[{0:yyyy-MM-dd HH:mm:ss}] {1}\r\n", DateTime.Now, ex);
 
                 lock (_sync)
                 {

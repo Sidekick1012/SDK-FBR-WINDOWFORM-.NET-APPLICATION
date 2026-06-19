@@ -1,4 +1,4 @@
-﻿using HCR_E_INVOICING_SYSTEM.Data;
+using HCR_E_INVOICING_SYSTEM.Data;
 using System;
 using System.Data;
 using System.Drawing;
@@ -110,20 +110,31 @@ public class CustomerForm : Form
         fieldsPanel.Controls.Add(txtRegistrationType, 1, 3);
 
         // ===== BUTTONS =====
-        var btnPanel = new FlowLayoutPanel
+        var btnPanel = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            FlowDirection = FlowDirection.LeftToRight,
-            Padding = new Padding(10),
-            AutoSize = true
+            ColumnCount = 5,
+            RowCount = 1,
+            Padding = new Padding(0),
+            Margin = new Padding(0)
         };
+        btnPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));  // Add
+        btnPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));  // Update
+        btnPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));  // Delete
+        btnPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));  // Clear
+        btnPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));   // Spacer
+        btnPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
         btnAdd = MakeButton("➕ Add", "#C8A84B");
         btnUpdate = MakeButton("✏️ Update", "#1D2068");
         btnDelete = MakeButton("🗑 Delete", "#8B1A1A");
         btnClear = MakeButton("🧹 Clear", "#4A4A6A");
+        btnAdd.Dock = btnUpdate.Dock = btnDelete.Dock = btnClear.Dock = DockStyle.Fill;
 
-        btnPanel.Controls.AddRange(new Control[] { btnAdd, btnUpdate, btnDelete, btnClear });
+        btnPanel.Controls.Add(btnAdd, 0, 0);
+        btnPanel.Controls.Add(btnUpdate, 1, 0);
+        btnPanel.Controls.Add(btnDelete, 2, 0);
+        btnPanel.Controls.Add(btnClear, 3, 0);
 
         // ===== DATAGRIDVIEW =====
         dgvCustomers = new DataGridView

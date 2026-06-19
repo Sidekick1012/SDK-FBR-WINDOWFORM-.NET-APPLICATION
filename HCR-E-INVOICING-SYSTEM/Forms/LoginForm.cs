@@ -1,4 +1,4 @@
-﻿using HCR_E_INVOICING_SYSTEM;
+using HCR_E_INVOICING_SYSTEM;
 using HCR_E_INVOICING_SYSTEM.Data;
 using System;
 using System.Data.SQLite;
@@ -14,6 +14,8 @@ namespace InvoiceApp
         private Label lblBrand, lblTitle, lblUsername, lblPassword;
         private TextBox txtUsername, txtPassword;
         private Button btnLogin, btnForgot;
+        private Button btnTogglePassword;
+        private bool showPassword = false;
 
         private bool isUserPlaceholder = true;
         private bool isPassPlaceholder = true;
@@ -31,6 +33,7 @@ namespace InvoiceApp
 
             // Form Properties
             this.Text = "LOGIN - INVOICE SYSTEM";
+            this.Size = new Size(700, 450);
             this.MinimumSize = new Size(700, 450);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -39,14 +42,28 @@ namespace InvoiceApp
 
             this.SuspendLayout();
 
+            // Main container to split left and right panels cleanly
+            var mainContainer = new TableLayoutPanel()
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                BackColor = Color.White,
+                Padding = new Padding(0),
+                Margin = new Padding(0)
+            };
+            mainContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 300)); // Left branding panel
+            mainContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); // Right login form panel
+            mainContainer.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            this.Controls.Add(mainContainer);
+
             // Left Branding Panel - HCR White
             leftPanel = new Panel()
             {
-                Dock = DockStyle.Left,
-                Width = 300,
+                Dock = DockStyle.Fill,
                 BackColor = Color.White
             };
-            this.Controls.Add(leftPanel);
+            mainContainer.Controls.Add(leftPanel, 0, 0);
 
             // =====================
             // HCR Logo
@@ -138,100 +155,146 @@ namespace InvoiceApp
                 Dock = DockStyle.Fill
             };
 
-            // Add order: later added = visually higher for DockStyle.Top
-            // Desired visual (top→bottom): topBar, picLogo, lblChamber, lblTagline, divider
-            // So add in reverse: divider first, then lblTagline, lblChamber, picLogo, topBar last
+            // Add in clean docking order to prevent internal overlaps
             leftPanel.Controls.Add(lblDev);      // DockBottom
-            leftPanel.Controls.Add(filler);      // DockFill
-            leftPanel.Controls.Add(divider);     // visual: lowest top-docked
-            leftPanel.Controls.Add(lblTagline);  // visual: above divider
-            leftPanel.Controls.Add(lblChamber);  // visual: above tagline
-            leftPanel.Controls.Add(picLogo);     // visual: above chamber
-            leftPanel.Controls.Add(topBar);      // visual: very top (added last)
+            leftPanel.Controls.Add(topBar);      // DockTop (very top)
+            leftPanel.Controls.Add(picLogo);     // DockTop (under topBar)
+            leftPanel.Controls.Add(lblChamber);  // DockTop (under picLogo)
+            leftPanel.Controls.Add(lblTagline);  // DockTop (under lblChamber)
+            leftPanel.Controls.Add(divider);     // DockTop (under lblTagline)
+            leftPanel.Controls.Add(filler);      // DockFill (occupies remaining spacer)
 
+
+            // ===== RIGHT PANEL (Responsive Login Form) =====
+            var rightPanel = new Panel()
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White,
+                Padding = new Padding(30)
+            };
+            mainContainer.Controls.Add(rightPanel, 1, 0);
+
+            // Center layout inside right panel
+            var centerLayout = new TableLayoutPanel()
+            {
+                ColumnCount = 1,
+                RowCount = 7,
+                Dock = DockStyle.None,
+                AutoSize = true,
+                Anchor = AnchorStyles.None,
+                BackColor = Color.White,
+                Padding = new Padding(0)
+            };
+            centerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            centerLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));  // Title
+            centerLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 25));  // Username label
+            centerLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));  // Username box
+            centerLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 25));  // Password label
+            centerLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));  // Password box
+            centerLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 55));  // Login button
+            centerLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));  // Forgot Password button
 
             // Title
             lblTitle = new Label()
             {
                 Text = "LOGIN TO SYSTEM",
-                Font = new Font("Segoe UI", 20, FontStyle.Bold),
+                Font = new Font("Segoe UI", 18, FontStyle.Bold),
                 ForeColor = ColorTranslator.FromHtml("#1D2068"),
-                AutoSize = true,
-                Location = new Point(350, 50)
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
             };
-            this.Controls.Add(lblTitle);
 
-            // Username Label
+            // Username label
             lblUsername = new Label()
             {
-                Text = "USERNAME:",
-                Location = new Point(310, 120),
-                Font = new Font("Segoe UI", 10, FontStyle.Regular),
-                AutoSize = true
+                Text = "USERNAME",
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                ForeColor = Color.DimGray,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.BottomLeft
             };
-            this.Controls.Add(lblUsername);
 
             // Username TextBox
             txtUsername = new TextBox()
             {
-                Location = new Point(410, 115),
-                Width = 240,
-                Font = new Font("Segoe UI", 10, FontStyle.Regular),
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 11, FontStyle.Regular),
                 ForeColor = Color.Gray,
                 Text = "ENTER USERNAME"
             };
-            this.Controls.Add(txtUsername);
-
             txtUsername.GotFocus += RemoveUserPlaceholder;
             txtUsername.LostFocus += AddUserPlaceholder;
             txtUsername.KeyDown += (s, e) =>
             {
-                if (e.KeyCode == Keys.Enter)
-                {
-                    e.SuppressKeyPress = true;
-                    txtPassword.Focus();
-                }
+                if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; txtPassword.Focus(); }
             };
 
-            // Password Label
+            // Password label
             lblPassword = new Label()
             {
-                Text = "PASSWORD:",
-                Location = new Point(310, 170),
-                Font = new Font("Segoe UI", 10, FontStyle.Regular),
-                AutoSize = true
+                Text = "PASSWORD",
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                ForeColor = Color.DimGray,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.BottomLeft
             };
-            this.Controls.Add(lblPassword);
+
+            // Password TextBox container Panel
+            var pnlPassword = new TableLayoutPanel()
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                Padding = new Padding(0),
+                Margin = new Padding(0),
+                Height = 30
+            };
+            pnlPassword.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); // TextBox
+            pnlPassword.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 35)); // Eye Button
+            pnlPassword.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
             // Password TextBox
             txtPassword = new TextBox()
             {
-                Location = new Point(410, 165),
-                Width = 240,
-                Font = new Font("Segoe UI", 10, FontStyle.Regular),
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 11, FontStyle.Regular),
                 ForeColor = Color.Gray,
                 Text = "ENTER PASSWORD",
-                UseSystemPasswordChar = false
+                UseSystemPasswordChar = false,
+                Anchor = AnchorStyles.Left | AnchorStyles.Right
             };
-            this.Controls.Add(txtPassword);
-
             txtPassword.GotFocus += RemovePassPlaceholder;
             txtPassword.LostFocus += AddPassPlaceholder;
             txtPassword.KeyDown += (s, e) =>
             {
-                if (e.KeyCode == Keys.Enter)
-                {
-                    e.SuppressKeyPress = true;
-                    PerformLogin();
-                }
+                if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; PerformLogin(); }
             };
+
+            btnTogglePassword = new Button()
+            {
+                Text = "👁",
+                Height = 28,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                ForeColor = ColorTranslator.FromHtml("#1D2068"),
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9),
+                Anchor = AnchorStyles.Left | AnchorStyles.Right,
+                Margin = new Padding(3, 0, 0, 0)
+            };
+            btnTogglePassword.FlatAppearance.BorderSize = 1;
+            btnTogglePassword.FlatAppearance.BorderColor = Color.LightGray;
+            btnTogglePassword.Click += (s, e) => TogglePasswordVisibility();
+
+            pnlPassword.Controls.Add(txtPassword, 0, 0);
+            pnlPassword.Controls.Add(btnTogglePassword, 1, 0);
 
             // Login Button
             btnLogin = new Button()
             {
                 Text = "LOGIN",
-                Location = new Point(410, 220),
-                Width = 240,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 8, 0, 0),
                 Height = 45,
                 BackColor = ColorTranslator.FromHtml("#1D2068"),
                 ForeColor = Color.White,
@@ -240,28 +303,50 @@ namespace InvoiceApp
                 Cursor = Cursors.Hand
             };
             btnLogin.FlatAppearance.BorderSize = 0;
+            btnLogin.MouseEnter += (s, e) => btnLogin.BackColor = ColorTranslator.FromHtml("#2A2F7A");
+            btnLogin.MouseLeave += (s, e) => btnLogin.BackColor = ColorTranslator.FromHtml("#1D2068");
             btnLogin.Click += (s, e) => PerformLogin();
-            this.Controls.Add(btnLogin);
 
-            // Forgot Password Button
+            // Forgot Password
             btnForgot = new Button()
             {
                 Text = "FORGOT PASSWORD?",
-                Location = new Point(410, 270),
-                Width = 240,
-                Height = 30,
+                Dock = DockStyle.None,
                 FlatStyle = FlatStyle.Flat,
-                ForeColor = Color.Blue,
+                ForeColor = ColorTranslator.FromHtml("#1D2068"),
                 BackColor = Color.White,
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9, FontStyle.Underline),
+                Anchor = AnchorStyles.None,
+                Margin = new Padding(0, 5, 0, 0)
             };
             btnForgot.FlatAppearance.BorderSize = 0;
+            btnForgot.Click += (s, e) => {
+                using (var forgotForm = new ForgotPasswordForm())
+                {
+                    forgotForm.ShowDialog(this);
+                }
+            };
 
+            // Add to table
+            centerLayout.Controls.Add(lblTitle, 0, 0);
+            centerLayout.Controls.Add(lblUsername, 0, 1);
+            centerLayout.Controls.Add(txtUsername, 0, 2);
+            centerLayout.Controls.Add(lblPassword, 0, 3);
+            centerLayout.Controls.Add(pnlPassword, 0, 4);
+            centerLayout.Controls.Add(btnLogin, 0, 5);
+            centerLayout.Controls.Add(btnForgot, 0, 6);
 
-            // Footer Panel removed
-
-
-
+            // Center the layout dynamically
+            rightPanel.Controls.Add(centerLayout);
+            rightPanel.SizeChanged += (s, e) =>
+            {
+                int targetW = Math.Min(360, rightPanel.ClientSize.Width - 60);
+                centerLayout.Width = targetW;
+                centerLayout.Left = (rightPanel.ClientSize.Width - targetW) / 2;
+                centerLayout.Top = Math.Max(10, (rightPanel.ClientSize.Height - centerLayout.Height) / 2 - 35);
+            };
 
             this.ResumeLayout(false);
         }
@@ -304,7 +389,7 @@ namespace InvoiceApp
         }
         private void TxtPassword_TextChanged(object sender, EventArgs e)
         {
-            if (!isPassPlaceholder && txtPassword.Text.Length > 0)
+            if (!isPassPlaceholder && txtPassword.Text.Length > 0 && !showPassword)
             {
                 txtPassword.UseSystemPasswordChar = true;
                 txtPassword.TextChanged -= TxtPassword_TextChanged; // disable after done
@@ -319,6 +404,28 @@ namespace InvoiceApp
                 txtPassword.UseSystemPasswordChar = false;  // placeholder ke liye plain text
                 txtPassword.ForeColor = Color.Gray;
                 txtPassword.Text = "ENTER PASSWORD";
+                showPassword = false;
+                btnTogglePassword.Text = "👁";
+            }
+        }
+
+        private void TogglePasswordVisibility()
+        {
+            if (isPassPlaceholder) return;
+
+            showPassword = !showPassword;
+            if (showPassword)
+            {
+                txtPassword.UseSystemPasswordChar = false;
+                btnTogglePassword.Text = "🙈";
+            }
+            else
+            {
+                if (txtPassword.Text.Length > 0)
+                {
+                    txtPassword.UseSystemPasswordChar = true;
+                }
+                btnTogglePassword.Text = "👁";
             }
         }
 
@@ -366,14 +473,7 @@ namespace InvoiceApp
         // SQLite Validation
         private bool ValidateUser(string username, string password)
         {
-            // First check for default admin
-            if (username.Equals("admin", StringComparison.OrdinalIgnoreCase) &&
-                password == "admin123")
-            {
-                return true;
-            }
-
-            // Otherwise check in database
+            // Check in database
             try
             {
                 using (var conn = new SQLiteConnection(DatabaseHelper.ConnectionString))
@@ -397,5 +497,262 @@ namespace InvoiceApp
             }
         }
 
+    }
+
+    public class ForgotPasswordForm : Form
+    {
+        private Label lblTitle, lblUsername, lblResetKey, lblNewPassword;
+        private TextBox txtUsername, txtResetKey, txtNewPassword;
+        private Button btnReset, btnCancel;
+
+        public ForgotPasswordForm()
+        {
+            InitializeUI();
+        }
+
+        private void InitializeUI()
+        {
+            this.Text = "RESET PASSWORD";
+            this.Size = new Size(420, 390);
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.BackColor = Color.White;
+
+            this.SuspendLayout();
+
+            // Orange top accent bar
+            var topBar = new Panel()
+            {
+                Dock = DockStyle.Top,
+                Height = 6,
+                BackColor = ColorTranslator.FromHtml("#E84B2B")
+            };
+            this.Controls.Add(topBar);
+
+            var mainLayout = new TableLayoutPanel()
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 6,
+                Padding = new Padding(30, 20, 30, 20),
+                BackColor = Color.White
+            };
+            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 45)); // Title
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 55)); // Username
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 55)); // Master Reset Key
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 55)); // New Password
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 15)); // Spacer
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 45)); // Buttons Layout
+            this.Controls.Add(mainLayout);
+
+            // Title
+            lblTitle = new Label()
+            {
+                Text = "Reset Account Password",
+                Font = new Font("Segoe UI", 14, FontStyle.Bold),
+                ForeColor = ColorTranslator.FromHtml("#1D2068"),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            mainLayout.Controls.Add(lblTitle, 0, 0);
+
+            // Username group
+            var pnlUser = new Panel() { Dock = DockStyle.Fill };
+            lblUsername = new Label()
+            {
+                Text = "USERNAME",
+                Font = new Font("Segoe UI", 8, FontStyle.Bold),
+                ForeColor = Color.DimGray,
+                Location = new Point(0, 0),
+                Size = new Size(340, 15)
+            };
+            txtUsername = new TextBox()
+            {
+                Font = new Font("Segoe UI", 10),
+                Location = new Point(0, 18),
+                Width = 340
+            };
+            pnlUser.Controls.Add(lblUsername);
+            pnlUser.Controls.Add(txtUsername);
+            mainLayout.Controls.Add(pnlUser, 0, 1);
+
+            // Master Reset Key group
+            var pnlKey = new Panel() { Dock = DockStyle.Fill };
+            lblResetKey = new Label()
+            {
+                Text = "MASTER RESET KEY",
+                Font = new Font("Segoe UI", 8, FontStyle.Bold),
+                ForeColor = Color.DimGray,
+                Location = new Point(0, 0),
+                Size = new Size(340, 15)
+            };
+            txtResetKey = new TextBox()
+            {
+                Font = new Font("Segoe UI", 10),
+                Location = new Point(0, 18),
+                Width = 340
+            };
+            pnlKey.Controls.Add(lblResetKey);
+            pnlKey.Controls.Add(txtResetKey);
+            mainLayout.Controls.Add(pnlKey, 0, 2);
+
+            // New Password group
+            var pnlPass = new Panel() { Dock = DockStyle.Fill };
+            lblNewPassword = new Label()
+            {
+                Text = "NEW PASSWORD",
+                Font = new Font("Segoe UI", 8, FontStyle.Bold),
+                ForeColor = Color.DimGray,
+                Location = new Point(0, 0),
+                Size = new Size(340, 15)
+            };
+            txtNewPassword = new TextBox()
+            {
+                Font = new Font("Segoe UI", 10),
+                Location = new Point(0, 18),
+                Width = 340,
+                UseSystemPasswordChar = true
+            };
+            pnlPass.Controls.Add(lblNewPassword);
+            pnlPass.Controls.Add(txtNewPassword);
+            mainLayout.Controls.Add(pnlPass, 0, 3);
+
+            // Buttons panel
+            var pnlButtons = new TableLayoutPanel()
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                Margin = new Padding(0)
+            };
+            pnlButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            pnlButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+
+            btnReset = new Button()
+            {
+                Text = "RESET",
+                Dock = DockStyle.Fill,
+                BackColor = ColorTranslator.FromHtml("#1D2068"),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(0, 0, 5, 0)
+            };
+            btnReset.FlatAppearance.BorderSize = 0;
+            btnReset.MouseEnter += (s, e) => btnReset.BackColor = ColorTranslator.FromHtml("#2A2F7A");
+            btnReset.MouseLeave += (s, e) => btnReset.BackColor = ColorTranslator.FromHtml("#1D2068");
+            btnReset.Click += BtnReset_Click;
+
+            btnCancel = new Button()
+            {
+                Text = "CANCEL",
+                Dock = DockStyle.Fill,
+                BackColor = Color.LightGray,
+                ForeColor = Color.Black,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(5, 0, 0, 0)
+            };
+            btnCancel.FlatAppearance.BorderSize = 0;
+            btnCancel.Click += (s, e) => this.Close();
+
+            pnlButtons.Controls.Add(btnReset, 0, 0);
+            pnlButtons.Controls.Add(btnCancel, 1, 0);
+            mainLayout.Controls.Add(pnlButtons, 0, 5);
+
+            this.ResumeLayout(false);
+        }
+
+        private void BtnReset_Click(object sender, EventArgs e)
+        {
+            string username = txtUsername.Text.Trim();
+            string resetKey = txtResetKey.Text.Trim();
+            string newPassword = txtNewPassword.Text.Trim();
+
+            if (string.IsNullOrEmpty(username))
+            {
+                MessageBox.Show("Please enter the Username.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtUsername.Focus();
+                return;
+            }
+
+            if (string.IsNullOrEmpty(resetKey))
+            {
+                MessageBox.Show("Please enter the Master Reset Key.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtResetKey.Focus();
+                return;
+            }
+
+            if (resetKey != "SDK-RESET-2025")
+            {
+                MessageBox.Show("Invalid Master Reset Key.", "Access Denied", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txtResetKey.Focus();
+                return;
+            }
+
+            if (string.IsNullOrEmpty(newPassword))
+            {
+                MessageBox.Show("Please enter a New Password.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtNewPassword.Focus();
+                return;
+            }
+
+            // Check if username exists in DB
+            try
+            {
+                bool userExists = false;
+                using (var conn = new SQLiteConnection(DatabaseHelper.ConnectionString))
+                {
+                    conn.Open();
+                    string checkSql = "SELECT COUNT(*) FROM Users WHERE Username=@Username";
+                    using (var cmd = new SQLiteCommand(checkSql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Username", username);
+                        userExists = Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                    }
+
+                    if (!userExists)
+                    {
+                        // Special case: If they want to reset default admin but it wasn't inserted (should be though)
+                        if (username.Equals("admin", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string insertSql = "INSERT INTO Users (Username, Password) VALUES ('admin', @Password)";
+                            using (var cmd = new SQLiteCommand(insertSql, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@Password", newPassword);
+                                cmd.ExecuteNonQuery();
+                            }
+                            MessageBox.Show("Admin account password has been successfully reset!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            this.Close();
+                            return;
+                        }
+
+                        MessageBox.Show("Username not found in the database.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    // Reset password
+                    string updateSql = "UPDATE Users SET Password=@Password WHERE Username=@Username";
+                    using (var cmd = new SQLiteCommand(updateSql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Password", newPassword);
+                        cmd.Parameters.AddWithValue("@Username", username);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                MessageBox.Show("Password has been reset successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                this.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Database Error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
 }

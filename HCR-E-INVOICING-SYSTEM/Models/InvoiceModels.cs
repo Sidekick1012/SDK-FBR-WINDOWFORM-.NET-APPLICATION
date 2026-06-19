@@ -1,10 +1,21 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace HCR_E_INVOICING_SYSTEM.Models
 {
     public class InvoiceItem
     {
+        public InvoiceItem()
+        {
+            fixedNotifiedValueOrRetailPrice = 0;
+            salesTaxWithheldAtSource = 0;
+            extraTax = "";
+            fedPayable = 0;
+            discount = 0;
+            sroItemSerialNo = "";
+            sroScheduleNo = "ICTO TABLE I";
+        }
+
         public string hsCode { get; set; }
         public string productDescription { get; set; }
         public string rate { get; set; }
@@ -12,22 +23,27 @@ namespace HCR_E_INVOICING_SYSTEM.Models
         public decimal quantity { get; set; }
         public decimal totalValues { get; set; }
         public decimal valueSalesExcludingST { get; set; }
-        public decimal fixedNotifiedValueOrRetailPrice { get; set; } = 0;
+        public decimal fixedNotifiedValueOrRetailPrice { get; set; }
         public decimal salesTaxApplicable { get; set; }
-        public decimal salesTaxWithheldAtSource { get; set; } = 0;
-        public string extraTax { get; set; } = "";
+        public decimal salesTaxWithheldAtSource { get; set; }
+        public string extraTax { get; set; }
         public decimal furtherTax { get; set; }
-        public decimal fedPayable { get; set; } = 0;
-        public decimal discount { get; set; } = 0;
+        public decimal fedPayable { get; set; }
+        public decimal discount { get; set; }
         public string saleType { get; set; }
-        public string sroItemSerialNo { get; set; } = "";
-
-        public string sroScheduleNo { get; set; } = "ICTO TABLE I";
+        public string sroItemSerialNo { get; set; }
+        public string sroScheduleNo { get; set; }
     }
 
     public class InvoiceData
     {
-        public string invoiceType { get; set; } = "Sale Invoice";
+        public InvoiceData()
+        {
+            invoiceType = "Sale Invoice";
+            invoiceRefNo = "";
+        }
+
+        public string invoiceType { get; set; }
         public string invoiceDate { get; set; }
         public string sellerNTNCNIC { get; set; }
         public string sellerBusinessName { get; set; }
@@ -38,7 +54,7 @@ namespace HCR_E_INVOICING_SYSTEM.Models
         public string buyerProvince { get; set; }
         public string buyerAddress { get; set; }
         public string buyerRegistrationType { get; set; }
-        public string invoiceRefNo { get; set; } = "";
+        public string invoiceRefNo { get; set; }
         public string scenarioId { get; set; }
         public List<InvoiceItem> items { get; set; }
     }

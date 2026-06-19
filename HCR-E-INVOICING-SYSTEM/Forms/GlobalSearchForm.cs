@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Data.SQLite;
 using System.Drawing;
@@ -26,8 +26,8 @@ public class GlobalSearchForm : Form
         this.Size = new Size(900, 600);
         this.StartPosition = FormStartPosition.CenterParent;
         this.BackColor = Color.White;
-        this.FormBorderStyle = FormBorderStyle.FixedDialog;
-        this.MaximizeBox = false;
+        this.FormBorderStyle = FormBorderStyle.Sizable;
+        this.MaximizeBox = true;
 
         // Main Layout
         TableLayoutPanel mainLayout = new TableLayoutPanel
@@ -43,7 +43,18 @@ public class GlobalSearchForm : Form
         this.Controls.Add(mainLayout);
 
         // Header Panel
-        Panel headerPanel = new Panel { Dock = DockStyle.Fill };
+        TableLayoutPanel headerPanel = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 3,
+            RowCount = 1,
+            Padding = new Padding(0),
+            Margin = new Padding(0)
+        };
+        headerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 65));  // Query label
+        headerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); // Search textbox
+        headerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110)); // Search button
+        headerPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         mainLayout.Controls.Add(headerPanel, 0, 0);
 
         Label lblSearch = new Label
@@ -51,20 +62,20 @@ public class GlobalSearchForm : Form
             Text = "Query:",
             Font = new Font("Segoe UI", 11, FontStyle.Bold),
             ForeColor = ColorTranslator.FromHtml("#1D2068"),
-            Location = new Point(0, 12),
-            AutoSize = true
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleLeft
         };
-        headerPanel.Controls.Add(lblSearch);
+        headerPanel.Controls.Add(lblSearch, 0, 0);
 
         txtSearchTerm = new TextBox
         {
             Text = initialSearch,
             Font = new Font("Segoe UI", 11),
-            Location = new Point(65, 8),
-            Size = new Size(600, 30)
+            Dock = DockStyle.Fill,
+            Anchor = AnchorStyles.Left | AnchorStyles.Right
         };
         txtSearchTerm.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { PerformSearch(); e.Handled = true; e.SuppressKeyPress = true; } };
-        headerPanel.Controls.Add(txtSearchTerm);
+        headerPanel.Controls.Add(txtSearchTerm, 1, 0);
 
         btnSearch = new Button
         {
@@ -73,13 +84,13 @@ public class GlobalSearchForm : Form
             BackColor = ColorTranslator.FromHtml("#1D2068"),
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat,
-            Location = new Point(675, 7),
-            Size = new Size(100, 30),
-            Cursor = Cursors.Hand
+            Dock = DockStyle.Fill,
+            Cursor = Cursors.Hand,
+            Margin = new Padding(10, 0, 0, 0)
         };
         btnSearch.FlatAppearance.BorderSize = 0;
         btnSearch.Click += (s, e) => PerformSearch();
-        headerPanel.Controls.Add(btnSearch);
+        headerPanel.Controls.Add(btnSearch, 2, 0);
 
         // Tab Control
         tabControl = new TabControl
@@ -173,11 +184,11 @@ public class GlobalSearchForm : Form
         int productsCount = SearchProducts(term);
         int invoicesCount = SearchInvoices(term);
 
-        tabCustomers.Text = $"👥 Customers ({customersCount})";
-        tabProducts.Text = $"📦 Products ({productsCount})";
-        tabInvoices.Text = $"🧾 Invoices ({invoicesCount})";
+        tabCustomers.Text = string.Format("👥 Customers ({0})", customersCount);
+        tabProducts.Text = string.Format("📦 Products ({0})", productsCount);
+        tabInvoices.Text = string.Format("🧾 Invoices ({0})", invoicesCount);
 
-        lblResultCount.Text = $"Found {customersCount} customers, {productsCount} products, and {invoicesCount} invoices matching '{term}'. Double-click a row to open.";
+        lblResultCount.Text = string.Format("Found {0} customers, {1} products, and {2} invoices matching '{3}'. Double-click a row to open.", customersCount, productsCount, invoicesCount, term);
     }
 
     private int SearchCustomers(string term)

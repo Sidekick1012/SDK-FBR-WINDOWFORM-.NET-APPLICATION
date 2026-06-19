@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using HCR_E_INVOICING_SYSTEM;
 using HCR_E_INVOICING_SYSTEM.Data;
@@ -625,62 +625,111 @@ public class InvoiceViewerForm : Form
             };
             mainLayout.Controls.Add(lblTitle, 0, 0);
 
-            // === INVOICE HEADER INFO ===
+            // === INVOICE, BUYER & SELLER INFO PANELS (3 COLUMNS) ===
+            string headerFbrInvoiceNo = header.Table.Columns.Contains("fbrInvoiceNumber") && header["fbrInvoiceNumber"] != DBNull.Value ? header["fbrInvoiceNumber"].ToString() : "N/A";
+            string scenario = header.Table.Columns.Contains("scenarioId") && header["scenarioId"] != DBNull.Value ? header["scenarioId"].ToString() : "N/A";
+
+            var infoPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 3,
+                RowCount = 1,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Padding = new Padding(0, 10, 0, 10)
+            };
+            infoPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            infoPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            infoPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            infoPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+            // 1. Invoice Info Card
+            var gbInvoice = new GroupBox
+            {
+                Text = "📄 Invoice Details",
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = ColorTranslator.FromHtml("#1D2068"),
+                Dock = DockStyle.Fill,
+                AutoSize = true,
+                Padding = new Padding(10, 25, 10, 10),
+                FlatStyle = FlatStyle.Flat
+            };
             var lblHeader = new Label
             {
                 AutoSize = true,
-                Font = new Font("Segoe UI", 10, FontStyle.Regular),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
                 ForeColor = Color.Black,
-                Padding = new Padding(10),
-                Text =
-    $@"📄 Invoice No: {header["invoiceNumber"]}
-📅 Date: {Convert.ToDateTime(header["invoiceDate"]):yyyy-MM-dd}
-🏷 Status: {(header.Table.Columns.Contains("postStatus") ? header["postStatus"] : "N/A")}
-💳 Payment Mode: {(header.Table.Columns.Contains("paymentMode") ? header["paymentMode"] : "N/A")}"
-            };
-            mainLayout.Controls.Add(lblHeader, 0, 1);
-
-            // === CUSTOMER & SELLER INFO ===
-            var partyPanel = new TableLayoutPanel
-            {
                 Dock = DockStyle.Fill,
-                ColumnCount = 2,
-                Padding = new Padding(10)
-                
+                Text =
+    $@"Invoice No: {header["invoiceNumber"]}
+FBR Invoice No: {headerFbrInvoiceNo}
+Date: {Convert.ToDateTime(header["invoiceDate"]):yyyy-MM-dd}
+Status: {(header.Table.Columns.Contains("postStatus") ? header["postStatus"] : "N/A")}
+Scenario ID: {scenario}
+Payment Mode: {(header.Table.Columns.Contains("paymentMode") ? header["paymentMode"] : "N/A")}"
             };
-            partyPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            partyPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            gbInvoice.Controls.Add(lblHeader);
 
+            // 2. Buyer Info Card
+            var gbCustomer = new GroupBox
+            {
+                Text = "👤 Buyer Information",
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.DarkBlue,
+                Dock = DockStyle.Fill,
+                AutoSize = true,
+                Padding = new Padding(10, 25, 10, 10),
+                FlatStyle = FlatStyle.Flat
+            };
             var lblCustomer = new Label
             {
                 AutoSize = true,
-                Font = new Font("Segoe UI", 10, FontStyle.Regular),
-                ForeColor = Color.DarkBlue,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+                ForeColor = Color.Black,
+                Dock = DockStyle.Fill,
                 Text =
-    $@"👤 Buyer Information:
-• Name: {header["customerBusinessName"]}
-• NTN/CNIC: {(header.Table.Columns.Contains("customerNTNCNIC") ? header["customerNTNCNIC"] : "N/A")}"
-
+    $@"Name: {header["customerBusinessName"]}
+NTN/CNIC: {(header.Table.Columns.Contains("customerNTNCNIC") ? header["customerNTNCNIC"] : "N/A")}
+Province: {(header.Table.Columns.Contains("customerProvince") ? header["customerProvince"] : "N/A")}
+Address: {(header.Table.Columns.Contains("customerAddress") ? header["customerAddress"] : "N/A")}
+Reg. Type: {(header.Table.Columns.Contains("registrationType") ? header["registrationType"] : "N/A")}"
             };
-            string sellerNTN = header.Table.Columns.Contains("sellerNTNCNIC")
-     ? header["sellerNTNCNIC"]?.ToString()
-     : string.Empty;
+            gbCustomer.Controls.Add(lblCustomer);
+
+            // 3. Seller Info Card
+            var gbSeller = new GroupBox
+            {
+                Text = "🏢 Seller Information",
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.DarkGreen,
+                Dock = DockStyle.Fill,
+                AutoSize = true,
+                Padding = new Padding(10, 25, 10, 10),
+                FlatStyle = FlatStyle.Flat
+            };
+            string sellerNTN = header.Table.Columns.Contains("sellerNTNCNIC") ? header["sellerNTNCNIC"]?.ToString() : "N/A";
+            string sellerProvince = header.Table.Columns.Contains("sellerProvince") ? header["sellerProvince"]?.ToString() : "N/A";
+            string sellerAddress = header.Table.Columns.Contains("sellerAddress") ? header["sellerAddress"]?.ToString() : "N/A";
 
             var lblSeller = new Label
             {
                 AutoSize = true,
-                Font = new Font("Segoe UI", 10, FontStyle.Regular),
-                ForeColor = Color.DarkGreen,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+                ForeColor = Color.Black,
+                Dock = DockStyle.Fill,
                 Text =
-            $@"🏢 Seller Information:
-• Name: {(header.Table.Columns.Contains("sellerBusinessName") ? header["sellerBusinessName"] : "N/A")}
-• NTN: {sellerNTN}"
+            $@"Name: {(header.Table.Columns.Contains("sellerBusinessName") ? header["sellerBusinessName"] : "N/A")}
+NTN: {sellerNTN}
+Province: {sellerProvince}
+Address: {sellerAddress}"
             };
+            gbSeller.Controls.Add(lblSeller);
 
+            infoPanel.Controls.Add(gbInvoice, 0, 0);
+            infoPanel.Controls.Add(gbCustomer, 1, 0);
+            infoPanel.Controls.Add(gbSeller, 2, 0);
 
-            partyPanel.Controls.Add(lblCustomer, 0, 0);
-            partyPanel.Controls.Add(lblSeller, 1, 0);
-            mainLayout.Controls.Add(partyPanel, 0, 2);
+            mainLayout.Controls.Add(infoPanel, 0, 1);
 
             // === ITEMS GRID ===
             var dgv = new DataGridView
@@ -724,9 +773,23 @@ public class InvoiceViewerForm : Form
                  Font = new Font("Segoe UI", 10, FontStyle.Bold),
                  Width = 160,
                  Height = 40,
-                 FlatStyle = FlatStyle.Flat
+                 FlatStyle = FlatStyle.Flat,
+                 Enabled = false
              };
              btnPost.FlatAppearance.BorderSize = 0;
+
+             // === VALIDATE BUTTON ===
+             var btnValidate = new Button
+             {
+                 Text = "✅ Validate Invoice",
+                 BackColor = ColorTranslator.FromHtml("#C8A84B"),
+                 ForeColor = Color.White,
+                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                 Width = 160,
+                 Height = 40,
+                 FlatStyle = FlatStyle.Flat
+             };
+             btnValidate.FlatAppearance.BorderSize = 0;
 
             // === PROGRESS INDICATOR ===
             var postingProgress = new ProgressBar
@@ -740,91 +803,86 @@ public class InvoiceViewerForm : Form
             };
 
             // === BUTTON ACTIONS ===
-            btnPost.Click += (s, e) =>
+            btnValidate.Click += (s, e) =>
             {
+                btnValidate.Enabled = false;
                 btnPost.Enabled = false;
                 postingProgress.Visible = true;
 
-                // Build payload (same as before)
-                var invoiceJson = new JObject();
-                invoiceJson["invoiceType"] = "Sale Invoice";
-                invoiceJson["invoiceDate"] = Convert.ToDateTime(header["invoiceDate"]).ToString("yyyy-MM-dd");
-                invoiceJson["sellerNTNCNIC"] = header.Table.Columns.Contains("sellerNTNCNIC") ? header["sellerNTNCNIC"]?.ToString() : "";
-                invoiceJson["sellerBusinessName"] = header.Table.Columns.Contains("sellerBusinessName") ? header["sellerBusinessName"]?.ToString() : "";
-                invoiceJson["sellerProvince"] = header.Table.Columns.Contains("sellerProvince") ? header["sellerProvince"]?.ToString() : "";
-                invoiceJson["sellerAddress"] = header.Table.Columns.Contains("sellerAddress") ? header["sellerAddress"]?.ToString() : "";
-                invoiceJson["buyerNTNCNIC"] = header.Table.Columns.Contains("customerNTNCNIC") ? header["customerNTNCNIC"]?.ToString() : "";
-                invoiceJson["buyerBusinessName"] = header.Table.Columns.Contains("customerBusinessName") ? header["customerBusinessName"]?.ToString() : "";
-                invoiceJson["buyerProvince"] = header.Table.Columns.Contains("customerProvince") ? header["customerProvince"]?.ToString() : "";
-                invoiceJson["buyerAddress"] = header.Table.Columns.Contains("customerAddress") ? header["customerAddress"]?.ToString() : "";
-                invoiceJson["buyerRegistrationType"] = header.Table.Columns.Contains("registrationType") ? header["registrationType"]?.ToString() : "";
-                invoiceJson["invoiceRefNo"] = header.Table.Columns.Contains("invoiceNumber") ? header["invoiceNumber"]?.ToString() : "";
-                invoiceJson["scenarioId"] = header.Table.Columns.Contains("scenarioId") ? header["scenarioId"]?.ToString() : "";
-                
-                JArray itemsArray = new JArray();
-                 foreach (DataRow it in items.Rows)
-                 {
-                     var itemObj = new JObject();
-                     itemObj["hsCode"] = it.Table.Columns.Contains("hsCode") ? FbrApiService.SanitizeForJson(it["hsCode"]?.ToString(), 50) : "";
-                     itemObj["productDescription"] = it.Table.Columns.Contains("description") && it["description"] != DBNull.Value && !string.IsNullOrWhiteSpace(it["description"].ToString()) ? FbrApiService.SanitizeForJson(it["description"].ToString(), 300) : (it.Table.Columns.Contains("productDescription") ? FbrApiService.SanitizeForJson(it["productDescription"]?.ToString(), 300) : "");
-                     itemObj["rate"] = it.Table.Columns.Contains("rate") ? it["rate"]?.ToString() : "";
-                     itemObj["uoM"] = it.Table.Columns.Contains("uoM") ? FbrApiService.SanitizeForJson(it["uoM"]?.ToString(), 20) : "";
- 
-                    // Ensure numeric types and compute valueSalesExcludingST if missing
-                    decimal qty = 0m;
-                    decimal totalValues = 0m;
-                    decimal valueExcl = 0m;
-                    decimal salesTax = 0m;
-                    decimal futher = 0m;
- 
-                    decimal.TryParse(it.Table.Columns.Contains("quantity") ? it["quantity"]?.ToString() : "0", out qty);
-                    decimal.TryParse(it.Table.Columns.Contains("totalValues") ? it["totalValues"]?.ToString() : "0", out totalValues);
-                    // If DB has valueSalesExcludingST use it, otherwise compute from totalValues and rate
-                    if (it.Table.Columns.Contains("valueSalesExcludingST") && it["valueSalesExcludingST"] != DBNull.Value && decimal.TryParse(it["valueSalesExexcludingST"]?.ToString(), out valueExcl))
-                    {
-                        // valueExcl already set
-                    }
-                    else
-                    {
-                        // compute value excluding sales tax if rate available
-                        decimal rateVal = 0m;
-                        decimal.TryParse(it.Table.Columns.Contains("rate") ? it["rate"]?.ToString() : "0", out rateVal);
-                        if (rateVal != 0m)
-                            valueExcl = totalValues / (1 + rateVal / 100);
-                        else
-                            valueExcl = totalValues;
-                    }
- 
-                    decimal.TryParse(it.Table.Columns.Contains("salesTaxApplicable") ? it["salesTaxApplicable"]?.ToString() : "0", out salesTax);
-                    decimal.TryParse(it.Table.Columns.Contains("furtherTax") ? it["furtherTax"]?.ToString() : "0", out futher);
- 
-                    itemObj["quantity"] = qty;
-                    itemObj["totalValues"] = totalValues;
-                    itemObj["valueSalesExcludingST"] = valueExcl;
-                     itemObj["fixedNotifiedValueOrRetailPrice"] = 0;
-                     itemObj["salesTaxApplicable"] = salesTax;
-                     itemObj["salesTaxWithheldATSource"] = 0;
-                     itemObj["extraTax"] = "";
-                    itemObj["furtherTax"] = futher;
-                     itemObj["fedPayable"] = 0;
-                     itemObj["discount"] = 0;
-                    // Sanitize saleType to match GenerateInvoiceForm behavior (remove trailing parenthesis like " (default)")
-                    string saleTypeRaw = it.Table.Columns.Contains("saleType") ? it["saleType"]?.ToString() : null;
-                    string saleType = null;
-                    if (!string.IsNullOrWhiteSpace(saleTypeRaw))
-                    {
-                        int p = saleTypeRaw.IndexOf('(');
-                        saleType = p > 0 ? saleTypeRaw.Substring(0, p).Trim() : saleTypeRaw.Trim();
-                    }
-                    if (string.IsNullOrWhiteSpace(saleType)) saleType = "Goods at standard rate";
-                    itemObj["saleType"] = FbrApiService.SanitizeForJson(saleType, 100);
-                     itemObj["sroScheduleNo"] = it.Table.Columns.Contains("sroScheduleNo") ? FbrApiService.SanitizeForJson(it["sroScheduleNo"]?.ToString(), 100) : "";
-                     itemObj["sroItemSerialNo"] = it.Table.Columns.Contains("sroItemSerialNo") ? FbrApiService.SanitizeForJson(it["sroItemSerialNo"]?.ToString(), 50) : "";
+                string payload = BuildInvoiceJsonFromData(header, items);
 
-                     itemsArray.Add(itemObj);
-                 }
-                invoiceJson["items"] = itemsArray;
-                string payload = invoiceJson.ToString(Newtonsoft.Json.Formatting.Indented);
+                string sellerNtn = header.Table.Columns.Contains("sellerNTNCNIC") ? header["sellerNTNCNIC"]?.ToString() : string.Empty;
+                string sellerToken = GetSellerToken(sellerNtn);
+                if (string.IsNullOrEmpty(sellerToken))
+                {
+                    postingProgress.Visible = false;
+                    btnValidate.Enabled = true;
+                    MessageBox.Show("Seller API token not found. Cannot validate.", "Token Missing", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        var service = new FbrApiService();
+                        return service.ValidateInvoiceDataAsync(payload, sellerToken).GetAwaiter().GetResult();
+                    }
+                    catch (Exception ex) { return "__EXCEPTION__:" + ex.ToString(); }
+                }).ContinueWith(t =>
+                {
+                    postingProgress.Visible = false;
+                    btnValidate.Enabled = true;
+
+                    if (t.IsFaulted)
+                    {
+                        MessageBox.Show("Error validating invoice: " + t.Exception?.GetBaseException().Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    string result = t.Result ?? string.Empty;
+                    if (result.StartsWith("__EXCEPTION__:"))
+                    {
+                        MessageBox.Show("Error validating invoice: " + result.Substring("__EXCEPTION__:".Length), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    try
+                    {
+                        int idx = result.IndexOf('{');
+                        string jsonBody = idx >= 0 ? result.Substring(idx) : result;
+                        var resp = JObject.Parse(jsonBody);
+
+                        string status = resp["validationResponse"]?["status"]?.ToString() ?? "UNKNOWN";
+                        string statusCode = resp["validationResponse"]?["statusCode"]?.ToString() ?? "";
+
+                        if (status.Equals("Valid", StringComparison.OrdinalIgnoreCase))
+                        {
+                            MessageBox.Show($"✅ Validation Successful!\n\n🟢 Status: {status}\nCode: {statusCode}", "Validation Result", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            btnPost.Enabled = true;
+                        }
+                        else
+                        {
+                            MessageBox.Show($"❌ Validation Failed!\n\nRaw Response:\n{result}", "Validation Result", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            btnPost.Enabled = false;
+                        }
+                    }
+                    catch
+                    {
+                        MessageBox.Show($"⚠️ Could not parse response.\n\nRaw Response:\n{result}", "Validation Result", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        btnPost.Enabled = false;
+                    }
+
+                }, TaskScheduler.FromCurrentSynchronizationContext());
+            };
+
+            btnPost.Click += (s, e) =>
+            {
+                btnPost.Enabled = false;
+                btnValidate.Enabled = false;
+                postingProgress.Visible = true;
+
+                string payload = BuildInvoiceJsonFromData(header, items);
 
                 string sellerNtn = header.Table.Columns.Contains("sellerNTNCNIC") ? header["sellerNTNCNIC"]?.ToString() : string.Empty;
                 string sellerToken = GetSellerToken(sellerNtn);
@@ -832,6 +890,7 @@ public class InvoiceViewerForm : Form
                 {
                     postingProgress.Visible = false;
                     btnPost.Enabled = true;
+                    btnValidate.Enabled = true;
                     MessageBox.Show("Seller API token not found. Cannot post.", "Token Missing", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
@@ -849,6 +908,7 @@ public class InvoiceViewerForm : Form
                 {
                     postingProgress.Visible = false;
                     btnPost.Enabled = true;
+                    btnValidate.Enabled = true;
 
                     if (t.IsFaulted)
                     {
@@ -911,7 +971,8 @@ public class InvoiceViewerForm : Form
             // === ADD BUTTONS TO PANEL ===
             buttonPanel.Controls.Add(postingProgress);
             buttonPanel.Controls.Add(btnPost);
-             infoForm.Controls.Add(buttonPanel);
+            buttonPanel.Controls.Add(btnValidate);
+            infoForm.Controls.Add(buttonPanel);
 
             // === ADD TO FORM ===
             infoForm.Controls.Add(mainLayout);
@@ -1082,6 +1143,131 @@ WHERE i.invoiceDate BETWEEN @startDate AND @endDate";
                 MessageBox.Show($"❌ Error deleting invoice: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+    }
+
+    private string BuildInvoiceJsonFromData(DataRow header, DataTable items)
+    {
+        var invoiceJson = new JObject();
+        invoiceJson["invoiceType"] = "Sale Invoice";
+        invoiceJson["invoiceDate"] = Convert.ToDateTime(header["invoiceDate"]).ToString("yyyy-MM-dd");
+        invoiceJson["sellerNTNCNIC"] = header.Table.Columns.Contains("sellerNTNCNIC") ? header["sellerNTNCNIC"]?.ToString() : "";
+        invoiceJson["sellerBusinessName"] = header.Table.Columns.Contains("sellerBusinessName") ? header["sellerBusinessName"]?.ToString() : "";
+        invoiceJson["sellerProvince"] = header.Table.Columns.Contains("sellerProvince") ? header["sellerProvince"]?.ToString() : "";
+        invoiceJson["sellerAddress"] = header.Table.Columns.Contains("sellerAddress") ? header["sellerAddress"]?.ToString() : "";
+        invoiceJson["buyerNTNCNIC"] = header.Table.Columns.Contains("customerNTNCNIC") ? header["customerNTNCNIC"]?.ToString() : "";
+        invoiceJson["buyerBusinessName"] = header.Table.Columns.Contains("customerBusinessName") ? header["customerBusinessName"]?.ToString() : "";
+        invoiceJson["buyerProvince"] = header.Table.Columns.Contains("customerProvince") ? header["customerProvince"]?.ToString() : "";
+        invoiceJson["buyerAddress"] = header.Table.Columns.Contains("customerAddress") ? header["customerAddress"]?.ToString() : "";
+        invoiceJson["buyerRegistrationType"] = header.Table.Columns.Contains("registrationType") ? header["registrationType"]?.ToString() : "";
+
+        // FIX 1: FBR expects "sourceInvoiceNo", not "invoiceRefNo"
+        invoiceJson["sourceInvoiceNo"] = header.Table.Columns.Contains("invoiceNumber") ? header["invoiceNumber"]?.ToString() : "";
+
+        // FIX 2: scenarioId from header (falls back to first item's saleType if header has none)
+        string scenarioId = header.Table.Columns.Contains("scenarioId") ? header["scenarioId"]?.ToString() : "";
+        if (string.IsNullOrWhiteSpace(scenarioId)) scenarioId = "SN001";
+        invoiceJson["scenarioId"] = scenarioId;
+
+        JArray itemsArray = new JArray();
+        foreach (DataRow it in items.Rows)
+        {
+            var itemObj = new JObject();
+            itemObj["hsCode"] = it.Table.Columns.Contains("hsCode") ? FbrApiService.SanitizeForJson(it["hsCode"]?.ToString(), 50) : "";
+            itemObj["productDescription"] = it.Table.Columns.Contains("description") && it["description"] != DBNull.Value && !string.IsNullOrWhiteSpace(it["description"].ToString()) ? FbrApiService.SanitizeForJson(it["description"].ToString(), 300) : (it.Table.Columns.Contains("productDescription") ? FbrApiService.SanitizeForJson(it["productDescription"]?.ToString(), 300) : "");
+            itemObj["rate"] = it.Table.Columns.Contains("rate") ? it["rate"]?.ToString() : "";
+            itemObj["uoM"] = it.Table.Columns.Contains("uoM") ? FbrApiService.SanitizeForJson(it["uoM"]?.ToString(), 20) : "";
+
+            decimal qty = 0m;
+            decimal totalValues = 0m;
+            decimal valueExcl = 0m;
+            decimal salesTax = 0m;
+            decimal further = 0m;
+
+            decimal.TryParse(it.Table.Columns.Contains("quantity") ? it["quantity"]?.ToString() : "0", out qty);
+            decimal.TryParse(it.Table.Columns.Contains("totalValues") ? it["totalValues"]?.ToString() : "0", out totalValues);
+
+            // FIX 3: use stored valueSalesExcludingST first, then fall back to calculation
+            if (it.Table.Columns.Contains("valueSalesExcludingST") && it["valueSalesExcludingST"] != DBNull.Value && decimal.TryParse(it["valueSalesExcludingST"]?.ToString(), out valueExcl) && valueExcl != 0m)
+            {
+                // use stored value
+            }
+            else
+            {
+                decimal rateVal = 0m;
+                string rateStr = it.Table.Columns.Contains("rate") ? it["rate"]?.ToString()?.Replace("%", "").Trim() : "0";
+                decimal.TryParse(rateStr, out rateVal);
+                valueExcl = rateVal != 0m ? totalValues / (1 + rateVal / 100) : totalValues;
+            }
+
+            decimal.TryParse(it.Table.Columns.Contains("salesTaxApplicable") ? it["salesTaxApplicable"]?.ToString() : "0", out salesTax);
+            decimal.TryParse(it.Table.Columns.Contains("furtherTax") ? it["furtherTax"]?.ToString() : "0", out further);
+
+            itemObj["quantity"] = qty;
+            itemObj["totalValues"] = totalValues;
+            itemObj["valueSalesExcludingST"] = valueExcl;
+            itemObj["fixedNotifiedValueOrRetailPrice"] = 0.00m;
+            itemObj["salesTaxApplicable"] = salesTax;
+            itemObj["salesTaxWithheldAtSource"] = 0.00m;
+            itemObj["extraTax"] = 0.00m;
+            itemObj["furtherTax"] = further;
+            itemObj["fedPayable"] = 0.00m;
+            itemObj["discount"] = it.Table.Columns.Contains("discount") && it["discount"] != DBNull.Value ? Convert.ToDecimal(it["discount"]) : 0.00m;
+
+            // FIX 4: Normalize saleType to FBR-accepted values
+            string saleTypeRaw = it.Table.Columns.Contains("saleType") ? it["saleType"]?.ToString() : null;
+            string saleType = NormalizeSaleType(saleTypeRaw);
+            itemObj["saleType"] = FbrApiService.SanitizeForJson(saleType, 100);
+
+            // FIX 5: sroScheduleNo and sroItemSerialNo must be EMPTY for SN001 (standard rate).
+            // Sending Eighth/Third Schedule info alongside SN001 causes FBR error 0204 ("Sale type not match").
+            bool isStandardRate = saleType.Equals("Goods at standard rate (default)", StringComparison.OrdinalIgnoreCase);
+            string sroSchedule = isStandardRate ? "" : (it.Table.Columns.Contains("sroScheduleNo") ? FbrApiService.SanitizeForJson(it["sroScheduleNo"]?.ToString(), 100) : "");
+            string sroSerial   = isStandardRate ? "" : (it.Table.Columns.Contains("sroItemSerialNo") ? FbrApiService.SanitizeForJson(it["sroItemSerialNo"]?.ToString(), 50) : "");
+            itemObj["sroScheduleNo"]  = sroSchedule;
+            itemObj["sroItemSerialNo"] = sroSerial;
+
+            itemsArray.Add(itemObj);
+        }
+        invoiceJson["items"] = itemsArray;
+        return invoiceJson.ToString(Newtonsoft.Json.Formatting.Indented);
+    }
+
+    /// <summary>
+    /// Normalizes saleType values from the database/UI dropdowns to FBR-accepted strings.
+    /// Legacy values like "Standard" are mapped to "Goods at standard rate (default)".
+    /// </summary>
+    private static string NormalizeSaleType(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw) || raw.Equals("Select", StringComparison.OrdinalIgnoreCase))
+            return "Goods at standard rate (default)";
+
+        // If it's standard or standard rate, map to the default FBR string
+        if (raw.StartsWith("Goods at standard rate", StringComparison.OrdinalIgnoreCase) || raw.Equals("standard", StringComparison.OrdinalIgnoreCase))
+            return "Goods at standard rate (default)";
+
+        // Strip parenthetical suffixes: "Goods at standard rate (default)" was handled above, for others e.g. "Services (fed in st mode)" -> "Services" etc.
+        int paren = raw.IndexOf('(');
+        string cleaned = paren > 0 ? raw.Substring(0, paren).Trim() : raw.Trim();
+
+        // Map legacy / shorthand values saved to DB
+        switch (cleaned.ToLowerInvariant())
+        {
+            case "reduced":                  return "Goods at Reduced Rate";
+            case "zero": case "zero-rate":   return "Goods at Zero-rate";
+            case "exempt": case "exempt goods": return "Exempt goods";
+            case "services":                 return "Services";
+            case "petroleum": case "petroleum products": return "Petroleum Products";
+            case "sim":                      return "SIM";
+            case "cng": case "gas to cng stations": return "Gas to CNG stations";
+            case "mobile phones":            return "Mobile Phones";
+            case "3rd schedule": case "3rd schedule goods": return "3rd Schedule Goods";
+            case "fed (st mode)": case "goods (fed in st mode)": return "Goods (FED in ST Mode)";
+            case "services (fed in st mode)": return "Services (FED in ST Mode)";
+            case "ship breaking":            return "Ship breaking";
+            default:
+                // Already a proper FBR value — return as-is
+                return raw.Trim();
         }
     }
 }

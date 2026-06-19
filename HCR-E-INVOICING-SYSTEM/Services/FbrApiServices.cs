@@ -1,10 +1,9 @@
-﻿using System.Linq;
+using System.Linq;
 //using LiveCharts;
 using System;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Xamarin.Forms;
 using static QRCoder.PayloadGenerator;
 using System.Net;
 using System.Net.Http.Headers;
@@ -147,11 +146,24 @@ public class FbrApiService
         return obj;
     }
 
+    private class SendResult
+    {
+        public bool Success { get; set; }
+        public HttpResponseMessage Response { get; set; }
+        public string Error { get; set; }
+        public SendResult(bool success, HttpResponseMessage response, string error)
+        {
+            Success = success;
+            Response = response;
+            Error = error;
+        }
+    }
+
     /// <summary>
     /// Sends an HttpRequestMessage with simple retry and timeout handling.
-    /// Returns a tuple of (isSuccess, statusLine, content) where isSuccess indicates a network/HTTP success.
+    /// Returns a SendResult object containing success status, response, and error.
     /// </summary>
-    private async Task<(bool success, HttpResponseMessage response, string error)> SendWithRetriesAsync(HttpRequestMessage request, int maxAttempts = 5, int timeoutSeconds = 180)
+    private async Task<SendResult> SendWithRetriesAsync(HttpRequestMessage request, int maxAttempts = 5, int timeoutSeconds = 180)
     {
         int attempt = 0;
         var rand = new Random();
@@ -170,30 +182,30 @@ public class FbrApiService
                     try
                     {
                         string respBody = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        SaveLog($"HTTP {(int)resp.StatusCode} {resp.ReasonPhrase} - {request.RequestUri}\nResponse:\n{respBody}");
+                        SaveLog(string.Format("HTTP {0} {1} - {2}\nResponse:\n{3}", (int)resp.StatusCode, resp.ReasonPhrase, request.RequestUri, respBody));
 
                         // Save separate response file for deep debugging
                         try
                         {
-                            string respPath = Path.Combine(Path.GetTempPath(), $"fbr_response_{DateTime.Now:yyyyMMdd_HHmmss}_attempt{attempt}.txt");
+                            string respPath = Path.Combine(Path.GetTempPath(), string.Format("fbr_response_{0:yyyyMMdd_HHmmss}_attempt{1}.txt", DateTime.Now, attempt));
                             File.WriteAllText(respPath, respBody, Encoding.UTF8);
                         }
                         catch { }
                     }
                     catch { }
 
-                    return (true, resp, null);
+                    return new SendResult(true, resp, null);
                 }
                 catch (TaskCanceledException tce)
                 {
                     if (cts.IsCancellationRequested)
                     {
                         // timeout
-                        string msg = $"Request timed out after {timeoutSeconds} seconds on attempt {attempt}.";
+                        string msg = string.Format("Request timed out after {0} seconds on attempt {1}.", timeoutSeconds, attempt);
                         System.Diagnostics.Debug.WriteLine(msg + " " + tce.Message);
                         SaveLog(msg + " " + tce.Message);
                         if (attempt >= maxAttempts)
-                            return (false, null, msg + " Consider increasing timeout or retrying later.");
+                            return new SendResult(false, null, msg + " Consider increasing timeout or retrying later.");
                     }
                     else
                     {
@@ -201,23 +213,23 @@ public class FbrApiService
                         string msg = "Request was cancelled.";
                         System.Diagnostics.Debug.WriteLine(msg + " " + tce.Message);
                         SaveLog(msg + " " + tce.Message);
-                        return (false, null, msg);
+                        return new SendResult(false, null, msg);
                     }
                 }
                 catch (HttpRequestException hre)
                 {
-                    string logMsg = $"HttpRequestException on attempt {attempt}: {hre.Message}";
+                    string logMsg = string.Format("HttpRequestException on attempt {0}: {1}", attempt, hre.Message);
                     System.Diagnostics.Debug.WriteLine(logMsg);
                     SaveLog(logMsg);
                     if (attempt >= maxAttempts)
-                        return (false, null, "Network error: " + hre.Message);
+                        return new SendResult(false, null, "Network error: " + hre.Message);
                 }
                 catch (Exception ex)
                 {
-                    string logMsg = $"Unexpected error on attempt {attempt}: {ex.Message}";
+                    string logMsg = string.Format("Unexpected error on attempt {0}: {1}", attempt, ex.Message);
                     System.Diagnostics.Debug.WriteLine(logMsg);
                     SaveLog(logMsg);
-                    return (false, null, "Unexpected error: " + ex.Message);
+                    return new SendResult(false, null, "Unexpected error: " + ex.Message);
                 }
             }
 
@@ -228,7 +240,7 @@ public class FbrApiService
 
         string exhausted = "Retries exhausted";
         SaveLog(exhausted);
-        return (false, null, exhausted);
+        return new SendResult(false, null, exhausted);
     }
 
     // Persist log entries to temp file for later inspection
@@ -237,7 +249,7 @@ public class FbrApiService
         try
         {
             string logPath = Path.Combine(Path.GetTempPath(), "fbr_api_log.txt");
-            string entry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}{Environment.NewLine}{Environment.NewLine}";
+            string entry = string.Format("[{0:yyyy-MM-dd HH:mm:ss}] {1}{2}{3}", DateTime.Now, message, Environment.NewLine, Environment.NewLine);
             File.AppendAllText(logPath, entry, Encoding.UTF8);
         }
         catch { }
@@ -257,7 +269,7 @@ public class FbrApiService
             catch (Exception cleanEx)
             {
                 // If cleaning fails, log but continue with original payload
-                System.Diagnostics.Debug.WriteLine($"JSON cleaning warning: {cleanEx.Message}");
+                System.Diagnostics.Debug.WriteLine("JSON cleaning warning: " + cleanEx.Message);
                 SaveLog("JSON cleaning warning: " + cleanEx.Message);
             }
 
@@ -281,11 +293,11 @@ public class FbrApiService
                     string errPath = Path.Combine(Path.GetTempPath(), "invalid_payload_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".json");
                     File.WriteAllText(errPath, jsonPayload, Encoding.UTF8);
                     SaveLog("JSON parse failed before send: " + ex.Message);
-                    return $"LOCAL_ERROR: JSON parse failed: {ex.Message}. Payload saved to: {errPath}";
+                    return string.Format("LOCAL_ERROR: JSON parse failed: {0}. Payload saved to: {1}", ex.Message, errPath);
                 }
                 catch
                 {
-                    return $"LOCAL_ERROR: JSON parse failed: {ex.Message}. Additionally, failed to save payload to temp file.";
+                    return string.Format("LOCAL_ERROR: JSON parse failed: {0}. Additionally, failed to save payload to temp file.", ex.Message);
                 }
             }
 
@@ -301,12 +313,12 @@ public class FbrApiService
             SaveLog("Sending POST to validate endpoint: " + request.RequestUri);
 
             var sendResult = await SendWithRetriesAsync(request, maxAttempts: 5, timeoutSeconds: 180).ConfigureAwait(false);
-            if (!sendResult.success)
+            if (!sendResult.Success)
             {
-                return $"REQUEST_ERROR: {sendResult.error}";
+                return "REQUEST_ERROR: " + sendResult.Error;
             }
 
-            var response = sendResult.response;
+            var response = sendResult.Response;
             string responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             // Save response for debugging
@@ -317,11 +329,13 @@ public class FbrApiService
             }
             catch { }
 
-            SaveLog($"Received HTTP {(int)response.StatusCode} {response.ReasonPhrase}");
+            SaveLog(string.Format("Received HTTP {0} {1}", (int)response.StatusCode, response.ReasonPhrase));
 
-            return $"HTTP {(int)response.StatusCode} {response.ReasonPhrase}\n" +
-                   $"Content-Type: {response.Content.Headers.ContentType}\n\n" +
-                   $"Response Body:\n{responseBody}";
+            return string.Format("HTTP {0} {1}\nContent-Type: {2}\n\nResponse Body:\n{3}", 
+                                 (int)response.StatusCode, 
+                                 response.ReasonPhrase, 
+                                 response.Content.Headers.ContentType, 
+                                 responseBody);
         }
         catch (Exception ex)
         {
@@ -344,7 +358,7 @@ public class FbrApiService
             catch (Exception cleanEx)
             {
                 // If cleaning fails, log but continue with original payload
-                System.Diagnostics.Debug.WriteLine($"JSON cleaning warning: {cleanEx.Message}");
+                System.Diagnostics.Debug.WriteLine("JSON cleaning warning: " + cleanEx.Message);
                 SaveLog("JSON cleaning warning: " + cleanEx.Message);
             }
 
@@ -368,11 +382,11 @@ public class FbrApiService
                     string errPath = Path.Combine(Path.GetTempPath(), "invalid_validate_payload_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".json");
                     File.WriteAllText(errPath, jsonPayload, Encoding.UTF8);
                     SaveLog("JSON parse failed before validate: " + ex.Message);
-                    return $"LOCAL_ERROR: JSON parse failed: {ex.Message}. Payload saved to: {errPath}";
+                    return string.Format("LOCAL_ERROR: JSON parse failed: {0}. Payload saved to: {1}", ex.Message, errPath);
                 }
                 catch
                 {
-                    return $"LOCAL_ERROR: JSON parse failed: {ex.Message}. Additionally, failed to save payload to temp file.";
+                    return string.Format("LOCAL_ERROR: JSON parse failed: {0}. Additionally, failed to save payload to temp file.", ex.Message);
                 }
             }
 
@@ -388,12 +402,12 @@ public class FbrApiService
             SaveLog("Sending VALIDATE to endpoint: " + request.RequestUri);
 
             var sendResult = await SendWithRetriesAsync(request, maxAttempts: 5, timeoutSeconds: 180).ConfigureAwait(false);
-            if (!sendResult.success)
+            if (!sendResult.Success)
             {
-                return $"REQUEST_ERROR: {sendResult.error}";
+                return "REQUEST_ERROR: " + sendResult.Error;
             }
 
-            var response = sendResult.response;
+            var response = sendResult.Response;
             string responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             // Save response for debugging
@@ -404,11 +418,13 @@ public class FbrApiService
             }
             catch { }
 
-            SaveLog($"Received HTTP {(int)response.StatusCode} {response.ReasonPhrase} on validate");
+            SaveLog(string.Format("Received HTTP {0} {1} on validate", (int)response.StatusCode, response.ReasonPhrase));
 
-            return $"HTTP {(int)response.StatusCode} {response.ReasonPhrase}\n" +
-                   $"Content-Type: {response.Content.Headers.ContentType}\n\n" +
-                   $"Response Body:\n{responseBody}";
+            return string.Format("HTTP {0} {1}\nContent-Type: {2}\n\nResponse Body:\n{3}", 
+                                 (int)response.StatusCode, 
+                                 response.ReasonPhrase, 
+                                 response.Content.Headers.ContentType, 
+                                 responseBody);
         }
         catch (Exception ex)
         {

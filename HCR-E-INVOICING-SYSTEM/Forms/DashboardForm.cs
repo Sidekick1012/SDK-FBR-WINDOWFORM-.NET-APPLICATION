@@ -1,4 +1,4 @@
-﻿using InvoiceApp;
+using InvoiceApp;
 using HCR_E_INVOICING_SYSTEM.Data;
 using System;
 using System.Data;
@@ -108,8 +108,10 @@ namespace HCR_E_INVOICING_SYSTEM
 
             buttonPanel.Controls.Add(CreateSidebarLabel("MANAGEMENT"));
             Button btnPayments = CreateSidebarButton("💳 Payments");
-            Button btnLogout = CreateSidebarButton("🚪 Logout");
+            Button btnReports  = CreateSidebarButton("📊 Reports");
+            Button btnLogout   = CreateSidebarButton("🚪 Logout");
             buttonPanel.Controls.Add(btnPayments);
+            buttonPanel.Controls.Add(btnReports);
             buttonPanel.Controls.Add(btnLogout);
 
             // ===== Bottom Logo =====
@@ -127,30 +129,68 @@ namespace HCR_E_INVOICING_SYSTEM
             sidebar.Controls.SetChildIndex(logoBox, 0); // ensure it's at bottom
 
 
-        
-
             // ===== Main Panel =====
             mainPanel = new Panel()
             {
                 Dock = DockStyle.Fill,
                 BackColor = ColorTranslator.FromHtml("#F5F7FA"),
-                Padding = new Padding(30, 30, 30, 30)
+                Padding = new Padding(20, 15, 20, 15)
             };
             this.Controls.Add(mainPanel);
+            mainPanel.BringToFront(); // Fix layout overlap so it docks after the sidebar
 
+            // ===== Outer vertical layout: Header row + Cards + Charts =====
+            var dashLayout = new TableLayoutPanel()
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0)
+            };
+            dashLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 55));   // Row 0: Refresh button
+            dashLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 230));  // Row 1: Info Cards
+            dashLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));   // Row 2: Charts
+            mainPanel.Controls.Add(dashLayout);
 
+            // ===== Top bar (Refresh button) =====
+            var topBar = new Panel() { Dock = DockStyle.Fill, BackColor = Color.Transparent };
+            Button btnRefresh = new Button()
+            {
+                Text = "🔄 Refresh",
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                Size = new Size(130, 40),
+                BackColor = ColorTranslator.FromHtml("#1D2068"),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Anchor = AnchorStyles.Right | AnchorStyles.Top,
+            };
+            btnRefresh.FlatAppearance.BorderSize = 0;
+            btnRefresh.MouseEnter += (s, e) => btnRefresh.BackColor = ColorTranslator.FromHtml("#0D1340");
+            btnRefresh.MouseLeave += (s, e) => btnRefresh.BackColor = ColorTranslator.FromHtml("#1D2068");
+            btnRefresh.Click += (s, e) => LoadDashboardValues();
+            // Position button to the right
+            topBar.Controls.Add(btnRefresh);
+            topBar.SizeChanged += (s, e) =>
+                btnRefresh.Location = new Point(topBar.ClientSize.Width - btnRefresh.Width - 5, 7);
+            dashLayout.Controls.Add(topBar, 0, 0);
+
+            // ===== Info Cards Grid (fully docked) =====
             TableLayoutPanel infoGrid = new TableLayoutPanel()
             {
                 ColumnCount = 3,
-                AutoSize = true,
-                Anchor = AnchorStyles.Top,
-                Location = new Point((mainPanel.Width - 700) / 2, 20),
-                BackColor = Color.Transparent
+                RowCount = 2,
+                Dock = DockStyle.Fill,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0, 5, 0, 10)
             };
-            infoGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
-            infoGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
-            infoGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
-            mainPanel.Controls.Add(infoGrid);
+            infoGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            infoGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            infoGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34f));
+            infoGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            infoGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            dashLayout.Controls.Add(infoGrid, 0, 1);
 
             // ===== Info Cards =====
             infoGrid.Controls.Add(CreateInfoCard("Total Customers", "0", "👤", Color.FromArgb(16, 185, 129), out lblTotalCustomers), 0, 0);
@@ -160,13 +200,12 @@ namespace HCR_E_INVOICING_SYSTEM
             infoGrid.Controls.Add(CreateInfoCard("Pending Payments", "0", "🏦", Color.FromArgb(244, 63, 94), out lblPendingPayments), 1, 1);
             infoGrid.Controls.Add(CreateInfoCard("Total Sellers", "0", "🏷️", Color.FromArgb(234, 179, 8), out lblTotalSellers), 2, 1);
 
-            // ===== Charts Grid =====
+            // ===== Charts Grid (fully docked) =====
             TableLayoutPanel chartsGrid = new TableLayoutPanel()
             {
                 ColumnCount = 2,
                 RowCount = 1,
-                Size = new Size(800, 320),
-                Location = new Point((mainPanel.Width - 800) / 2, 270),
+                Dock = DockStyle.Fill,
                 BackColor = Color.Transparent
             };
             chartsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
@@ -177,35 +216,7 @@ namespace HCR_E_INVOICING_SYSTEM
 
             chartsGrid.Controls.Add(trendChart, 0, 0);
             chartsGrid.Controls.Add(statusChart, 1, 0);
-            mainPanel.Controls.Add(chartsGrid);
-
-            // ===== Refresh Button =====
-            Button btnRefresh = new Button()
-            {
-                Text = "🔄 Refresh",
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                Size = new Size(120, 40),
-                BackColor = ColorTranslator.FromHtml("#1D2068"),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-            btnRefresh.FlatAppearance.BorderSize = 0;
-
-            btnRefresh.Location = new Point(mainPanel.ClientSize.Width - btnRefresh.Width - 30, 20);
-            mainPanel.Resize += (s, e) =>
-            {
-                btnRefresh.Location = new Point(mainPanel.ClientSize.Width - btnRefresh.Width - 30, 20);
-                infoGrid.Location = new Point((mainPanel.ClientSize.Width - 700) / 2, 20);
-                chartsGrid.Location = new Point((mainPanel.ClientSize.Width - 800) / 2, 270);
-            };
-            mainPanel.Controls.Add(btnRefresh);
-            btnRefresh.BringToFront();
-
-            btnRefresh.MouseEnter += (s, e) => btnRefresh.BackColor = ColorTranslator.FromHtml("#0D1340");
-            btnRefresh.MouseLeave += (s, e) => btnRefresh.BackColor = ColorTranslator.FromHtml("#1D2068");
-            btnRefresh.Click += (s, e) => LoadDashboardValues();
+            dashLayout.Controls.Add(chartsGrid, 0, 2);
 
             // ===== Load Data =====
             LoadDashboardValues();
@@ -240,6 +251,7 @@ namespace HCR_E_INVOICING_SYSTEM
             btnViewInvoices.Click += (s, e) => LaunchChildForm(new InvoiceViewerForm(), btnViewInvoices, "HCR e-Invoice - Invoice List");
             btnSeller.Click += (s, e) => LaunchChildForm(new SellerForm(), btnSeller, "HCR e-Invoice - Seller Management");
             btnPayments.Click += (s, e) => LaunchChildForm(new PaymentForm(), btnPayments, "HCR e-Invoice - Payment Management");
+            btnReports.Click  += (s, e) => LaunchChildForm(new ReportingForm(), btnReports, "HCR e-Invoice - Reports");
             btnLogout.Click += (s, e) =>
             {
                 _loggingOut = true;

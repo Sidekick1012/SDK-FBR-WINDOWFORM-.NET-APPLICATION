@@ -1,4 +1,4 @@
-﻿using HCR_E_INVOICING_SYSTEM.Data;
+using HCR_E_INVOICING_SYSTEM.Data;
 using System;
 using System.Data;
 using System.Drawing;
@@ -52,28 +52,67 @@ namespace HCR_E_INVOICING_SYSTEM
             this.BackColor = Color.WhiteSmoke;
             this.Padding = new Padding(10);
 
-            // Main layout container
-            var mainLayout = new FlowLayoutPanel
+            // Main outer container
+            TableLayoutPanel outerLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                AutoScroll = true,
+                ColumnCount = 1,
+                RowCount = 3,
                 Padding = new Padding(10),
-                WrapContents = true,
+                BackColor = Color.WhiteSmoke
             };
-            this.Controls.Add(mainLayout);
+            outerLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 200)); // Row for Top Info Cards
+            outerLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));  // Row for Item Entry and Grid
+            outerLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));   // Row for Action Buttons
+            this.Controls.Add(outerLayout);
+
+            // Top Info Cards Layout
+            TableLayoutPanel topCardsLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 3,
+                RowCount = 1,
+                Margin = new Padding(0)
+            };
+            topCardsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            topCardsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            topCardsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34f));
+            outerLayout.Controls.Add(topCardsLayout, 0, 0);
+
+            // Bottom Section Layout (Item Input + Grid)
+            TableLayoutPanel bottomSectionLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                Margin = new Padding(0, 10, 0, 0)
+            };
+            bottomSectionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 340)); // Fixed width for item input
+            bottomSectionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); // Remaining width for grid
+            outerLayout.Controls.Add(bottomSectionLayout, 0, 1);
 
             // Create panels in the same style as GenerateInvoiceForm
-            CreateSellerPanel(mainLayout);
-            CreateBuyerPanel(mainLayout);
-            CreateProductPanel(mainLayout);
-            CreateInvoiceInfoPanel(mainLayout);
-            CreateItemsGrid(mainLayout);
-            CreateButtonPanel(mainLayout);
+            CreateSellerPanel(topCardsLayout);
+            CreateBuyerPanel(topCardsLayout);
+            CreateProductPanel(topCardsLayout);
+            CreateInvoiceInfoPanel(bottomSectionLayout);
+            CreateItemsGrid(bottomSectionLayout);
+
+            // Action Buttons Panel
+            Panel actionButtonPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.WhiteSmoke,
+                Margin = new Padding(0)
+            };
+            outerLayout.Controls.Add(actionButtonPanel, 0, 2);
+            CreateButtonPanel(actionButtonPanel);
         }
 
-        private void CreateSellerPanel(FlowLayoutPanel mainLayout)
+        private void CreateSellerPanel(TableLayoutPanel parentLayout)
         {
             var sellerPanel = CreateGroupBox("🏢 Seller Information", new Size(400, 180));
+            sellerPanel.Dock = DockStyle.Fill;
 
             cmbSeller = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
             txtSellerNTN = CreateTextBox("", true);
@@ -86,12 +125,13 @@ namespace HCR_E_INVOICING_SYSTEM
                 ("Province:", txtSellerProvince),
                 ("Address:", txtSellerAddress));
 
-            mainLayout.Controls.Add(sellerPanel);
+            parentLayout.Controls.Add(sellerPanel, 0, 0);
         }
 
-        private void CreateBuyerPanel(FlowLayoutPanel mainLayout)
+        private void CreateBuyerPanel(TableLayoutPanel parentLayout)
         {
             var buyerPanel = CreateGroupBox("👤 Buyer Information", new Size(400, 180));
+            buyerPanel.Dock = DockStyle.Fill;
 
             cmbBuyer = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
             txtBuyerNTN = CreateTextBox("", true);
@@ -106,12 +146,13 @@ namespace HCR_E_INVOICING_SYSTEM
                 ("Address:", txtBuyerAddress),
                 ("Reg Type:", txtBuyerRegType));
 
-            mainLayout.Controls.Add(buyerPanel);
+            parentLayout.Controls.Add(buyerPanel, 1, 0);
         }
 
-        private void CreateProductPanel(FlowLayoutPanel mainLayout)
+        private void CreateProductPanel(TableLayoutPanel parentLayout)
         {
             var productPanel = CreateGroupBox("📦 Product Information", new Size(400, 150));
+            productPanel.Dock = DockStyle.Fill;
 
             cmbProduct = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
             txtProductCode = CreateTextBox("", true);
@@ -125,12 +166,13 @@ namespace HCR_E_INVOICING_SYSTEM
                 ("Tax Rate:", txtProductRate),
                 ("UOM:", txtProductUOM));
 
-            mainLayout.Controls.Add(productPanel);
+            parentLayout.Controls.Add(productPanel, 2, 0);
         }
 
-        private void CreateInvoiceInfoPanel(FlowLayoutPanel mainLayout)
+        private void CreateInvoiceInfoPanel(TableLayoutPanel parentLayout)
         {
             var infoPanel = CreateGroupBox("🧾 Invoice Item Details", new Size(400, 390));
+            infoPanel.Dock = DockStyle.Fill;
 
             // Invoice Basic Info
             txtInvoiceNumber = CreateTextBox("", true);
@@ -208,12 +250,13 @@ namespace HCR_E_INVOICING_SYSTEM
             itemButtons.Controls.AddRange(new Control[] { btnAddItem, btnRemoveItem });
             infoPanel.Controls.Add(itemButtons);
 
-            mainLayout.Controls.Add(infoPanel);
+            parentLayout.Controls.Add(infoPanel, 0, 0);
         }
 
-        private void CreateItemsGrid(FlowLayoutPanel mainLayout)
+        private void CreateItemsGrid(TableLayoutPanel parentLayout)
         {
             var gridPanel = CreateGroupBox("📋 Invoice Items", new Size(800, 400));
+            gridPanel.Dock = DockStyle.Fill;
 
             dgvItems = new DataGridView
             {
@@ -242,6 +285,7 @@ namespace HCR_E_INVOICING_SYSTEM
             dgvItems.Columns.Add("FurtherTaxAmount", "Further Tax Amount");
             dgvItems.Columns.Add("saleType", "Sale Type");
             dgvItems.Columns.Add("Notes", "Notes");
+            dgvItems.Columns["Notes"].Visible = false;
 
             // Style the grid like GenerateInvoiceForm
             dgvItems.BackgroundColor = Color.White;
@@ -266,7 +310,7 @@ namespace HCR_E_INVOICING_SYSTEM
             gridPanel.Controls.Add(dgvItems);
             gridPanel.Controls.Add(lblGrandTotal);
 
-            mainLayout.Controls.Add(gridPanel);
+            parentLayout.Controls.Add(gridPanel, 1, 0);
 
             // Events
             dgvItems.CellDoubleClick += DgvItems_CellDoubleClick;
@@ -276,28 +320,18 @@ namespace HCR_E_INVOICING_SYSTEM
             };
         }
 
-        private void CreateButtonPanel(FlowLayoutPanel mainLayout)
+        private void CreateButtonPanel(Panel parentPanel)
         {
-            var buttonPanel = new Panel
-            {
-                Height = 60,
-                Width = mainLayout.Width - 40,
-                BackColor = Color.WhiteSmoke,
-                Margin = new Padding(10)
-            };
-
             btnUpdate = CreateButton("💾 Update Invoice", Color.DarkSlateGray);
             btnUpdate.Click += BtnUpdate_Click;
 
             var btnCancel = CreateButton("❌ Cancel", Color.Firebrick);
             btnCancel.Click += (s, e) => this.Close();
 
-            buttonPanel.Controls.Add(btnUpdate);
-            buttonPanel.Controls.Add(btnCancel);
+            parentPanel.Controls.Add(btnUpdate);
+            parentPanel.Controls.Add(btnCancel);
             btnUpdate.Location = new Point(10, 10);
             btnCancel.Location = new Point(170, 10);
-
-            mainLayout.Controls.Add(buttonPanel);
         }
 
         // UI Helper Methods
@@ -332,15 +366,34 @@ namespace HCR_E_INVOICING_SYSTEM
 
         private void AddLabeledControls(GroupBox gb, params (string, Control)[] pairs)
         {
-            TableLayoutPanel tlp = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2 };
+            // Create a scrollable panel to hold the TableLayoutPanel
+            Panel scrollPanel = new Panel()
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                BackColor = Color.Transparent
+            };
+            gb.Controls.Add(scrollPanel);
+            scrollPanel.BringToFront(); // Dock last, filling remaining space above any bottom buttons
+
+            TableLayoutPanel tlp = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 2,
+                Padding = new Padding(0, 0, 15, 0) // Leave space for scrollbar
+            };
             tlp.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             tlp.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            
             foreach (var (labelText, control) in pairs)
             {
                 tlp.Controls.Add(new Label { Text = labelText, AutoSize = true, Anchor = AnchorStyles.Left, Padding = new Padding(2) });
+                control.Dock = DockStyle.Fill;
                 tlp.Controls.Add(control);
             }
-            gb.Controls.Add(tlp);
+            scrollPanel.Controls.Add(tlp);
         }
 
         // Data Loading Methods

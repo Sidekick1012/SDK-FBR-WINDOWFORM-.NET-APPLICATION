@@ -1,4 +1,4 @@
-﻿using InvoiceApp;
+using InvoiceApp;
 using HCR_E_INVOICING_SYSTEM;
 using HCR_E_INVOICING_SYSTEM.Data;
 using System;
@@ -37,7 +37,7 @@ namespace HCR_eInvoice
                     try
                     {
                         Logger.LogException(e.Exception);
-                        MessageBox.Show($"An unexpected error occurred.\n\n{e.Exception.Message}\n\nSee log: {logFile}", "Application Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(string.Format("An unexpected error occurred.\n\n{0}\n\nSee log: {1}", e.Exception.Message, logFile), "Application Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                     catch
                     {
@@ -49,15 +49,16 @@ namespace HCR_eInvoice
                 AppDomain.CurrentDomain.UnhandledException += (s, e) => {
                     try
                     {
-                        if (e.ExceptionObject is Exception ex)
+                        Exception ex = e.ExceptionObject as Exception;
+                        if (ex != null)
                         {
                             Logger.LogException(ex);
-                            MessageBox.Show($"A fatal error occurred.\n\n{ex.Message}\n\nSee log: {logFile}", "Fatal Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show(string.Format("A fatal error occurred.\n\n{0}\n\nSee log: {1}", ex.Message, logFile), "Fatal Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
                         else
                         {
                             Logger.LogException(new Exception("Unhandled exception object not Exception"));
-                            MessageBox.Show($"A fatal error occurred. See log: {logFile}", "Fatal Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show(string.Format("A fatal error occurred. See log: {0}", logFile), "Fatal Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
                     }
                     catch

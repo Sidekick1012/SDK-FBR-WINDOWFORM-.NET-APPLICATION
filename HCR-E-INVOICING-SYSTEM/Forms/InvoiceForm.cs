@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using HCR_E_INVOICING_SYSTEM;
 using HCR_E_INVOICING_SYSTEM.Data;
@@ -25,7 +25,7 @@ public class GenerateInvoiceForm : Form
     private ComboBox cmbSroSchedule; // SRO schedule dropdown
     private ComboBox cmbSroItemSerialNo; // SRO item serial no dropdown
     private TextBox txtItemNotes; // New Notes field
-    private Button btnAddItem, btnValidateInvoice, btnPost, btnDeleteItem;
+    private Button btnAddItem, btnValidateInvoice, btnPost, btnDeleteItem, btnSaveDraft;
     private DataGridView dgvItems;
     private DataTable buyers, products;
     private Label lblSubtotal;
@@ -86,14 +86,43 @@ public class GenerateInvoiceForm : Form
 
 
 
-        FlowLayoutPanel mainLayout = new FlowLayoutPanel
+        // Main outer container
+        TableLayoutPanel outerLayout = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            AutoScroll = true,
+            ColumnCount = 1,
+            RowCount = 2,
             Padding = new Padding(10),
-            WrapContents = true,
+            BackColor = Color.WhiteSmoke
         };
-        this.Controls.Add(mainLayout);
+        outerLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 200)); // Row for Top Info Cards
+        outerLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));  // Row for Item Entry and Grid
+        this.Controls.Add(outerLayout);
+
+        // Top Info Cards Layout
+        TableLayoutPanel topCardsLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 3,
+            RowCount = 1,
+            Margin = new Padding(0)
+        };
+        topCardsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+        topCardsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+        topCardsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34f));
+        outerLayout.Controls.Add(topCardsLayout, 0, 0);
+
+        // Bottom Section Layout (Item Input + Grid)
+        TableLayoutPanel bottomSectionLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 1,
+            Margin = new Padding(0, 10, 0, 0)
+        };
+        bottomSectionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 340)); // Fixed width for item input
+        bottomSectionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); // Remaining width for grid
+        outerLayout.Controls.Add(bottomSectionLayout, 0, 1);
 
 
         // Seller Info
@@ -111,7 +140,8 @@ public class GenerateInvoiceForm : Form
             ("Province:", txtSellerProvince),
             ("Address:", txtSellerAddress));
 
-        mainLayout.Controls.Add(gbSeller);
+        gbSeller.Dock = DockStyle.Fill;
+        topCardsLayout.Controls.Add(gbSeller, 0, 0);
         DataTable sellers = DatabaseHelper.GetSellers(); // make sure you have a GetSellers() method
 
         cmbSellerName.DisplayMember = "sellerBusinessName"; // column in DB
@@ -133,6 +163,12 @@ public class GenerateInvoiceForm : Form
                 sellerBusinessName = txtSellerBusiness.Text;
                 sellerProvince = txtSellerProvince.Text;
                 sellerAddress = txtSellerAddress.Text;
+
+                if (this.IsHandleCreated)
+                {
+                    btnPost.Enabled = false;
+                    btnSaveDraft.Enabled = false;
+                }
             }
         };
 
@@ -149,7 +185,8 @@ public class GenerateInvoiceForm : Form
             ("Business:", cmbBuyerName), ("NTN/CNIC:", txtBuyerNTN),
             ("Province:", txtBuyerProvince), ("Address:", txtBuyerAddress),
             ("Reg Type:", txtBuyerRegType));
-        mainLayout.Controls.Add(gbBuyer);
+        gbBuyer.Dock = DockStyle.Fill;
+        topCardsLayout.Controls.Add(gbBuyer, 1, 0);
 
         // Product Info
         GroupBox gbProduct = CreateGroupBox("📦 Product Info", new Size(400, 150));
@@ -162,7 +199,8 @@ public class GenerateInvoiceForm : Form
         AddLabeledControls(gbProduct,
             ("Description:", cmbHSCode), ("HS Code:", txtHSCode),
             ("Tax Rate:", txtProdRate), ("UOM:", txtProdUOM));
-        mainLayout.Controls.Add(gbProduct);
+        gbProduct.Dock = DockStyle.Fill;
+        topCardsLayout.Controls.Add(gbProduct, 2, 0);
 
         // Invoice Item Panel
         GroupBox gbItem = CreateGroupBox("🧾 Invoice Item", new Size(330, 390));
@@ -326,6 +364,7 @@ public class GenerateInvoiceForm : Form
         dgvItems.Columns.Add("sroItemSerialNo", "SRO Item Serial No");
         dgvItems.Columns.Add("sroScheduleNo", "SRO/Schedule No");
         dgvItems.Columns.Add("Notes", "Notes");
+        dgvItems.Columns["Notes"].Visible = false;
 
 
 
@@ -369,14 +408,14 @@ public class GenerateInvoiceForm : Form
         };
         btnPost = CreateButton("📤 Post Invoice", ColorTranslator.FromHtml("#1D2068"));
         btnValidateInvoice = CreateButton("✅ Validate Invoice", ColorTranslator.FromHtml("#C8A84B"));
-        // Save button removed from UI per request
-        gridButtons.Controls.AddRange(new Control[] { btnPost, btnValidateInvoice });
+        btnSaveDraft = CreateButton("💾 Save Draft", ColorTranslator.FromHtml("#4CAF50"));
+        gridButtons.Controls.AddRange(new Control[] { btnPost, btnValidateInvoice, btnSaveDraft });
         btnValidateInvoice.Click += btnValidate_Click;
         btnPost.Click += btnSubmit_Click;
-        // Save functionality disabled per request
+        btnSaveDraft.Click += btnSaveDraft_Click;
 
         btnPost.Enabled = false;
-        // Save button is removed; nothing to enable/disable
+        btnSaveDraft.Enabled = false;
         txtQuantity.TextChanged += RecalculateSalesTax;
         txtUnitPrice.TextChanged += RecalculateSalesTax;
         txtDiscount.TextChanged += RecalculateSalesTax;
@@ -384,17 +423,10 @@ public class GenerateInvoiceForm : Form
 
         gbGrid.Controls.Add(gridButtons);
 
-        FlowLayoutPanel itemLayout = new FlowLayoutPanel
-        {
-            FlowDirection = FlowDirection.LeftToRight,
-            AutoSize = true,
-            WrapContents = false,
-            Dock = DockStyle.Top,
-            Padding = new Padding(5),
-        };
-        itemLayout.Controls.Add(gbItem);
-        itemLayout.Controls.Add(gbGrid);
-        mainLayout.Controls.Add(itemLayout);
+        gbItem.Dock = DockStyle.Fill;
+        gbGrid.Dock = DockStyle.Fill;
+        bottomSectionLayout.Controls.Add(gbItem, 0, 0);
+        bottomSectionLayout.Controls.Add(gbGrid, 1, 0);
 
         // Load Data
         buyers = DatabaseHelper.GetCustomers();
@@ -409,6 +441,12 @@ public class GenerateInvoiceForm : Form
                 txtBuyerProvince.Text = row["customerProvince"].ToString();
                 txtBuyerAddress.Text = row["customerAddress"].ToString();
                 txtBuyerRegType.Text = row["registrationType"].ToString();
+
+                if (this.IsHandleCreated)
+                {
+                    btnPost.Enabled = false;
+                    btnSaveDraft.Enabled = false;
+                }
             }
         };
         cmbBuyerName.DataSource = buyers;
@@ -465,6 +503,8 @@ public class GenerateInvoiceForm : Form
         ClearFields();
         UpdateSubtotal();
         txtInvoiceNumber.Text = GetNextInvoiceNumber().ToString(); // auto increment for next item
+        btnPost.Enabled = false;
+        btnSaveDraft.Enabled = false;
     }
 
     private void BtnDeleteItem_Click(object sender, EventArgs e)
@@ -476,6 +516,8 @@ public class GenerateInvoiceForm : Form
             btnAddItem.Text = "➕ Add Item";
             ClearFields();
             UpdateSubtotal();
+            btnPost.Enabled = false;
+            btnSaveDraft.Enabled = false;
         }
     }
 
@@ -624,15 +666,34 @@ public class GenerateInvoiceForm : Form
 
     private void AddLabeledControls(GroupBox gb, params (string, Control)[] pairs)
     {
-        TableLayoutPanel tlp = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2 };
+        // Create a scrollable panel to hold the TableLayoutPanel
+        Panel scrollPanel = new Panel()
+        {
+            Dock = DockStyle.Fill,
+            AutoScroll = true,
+            BackColor = Color.Transparent
+        };
+        gb.Controls.Add(scrollPanel);
+        scrollPanel.BringToFront(); // Dock last, filling remaining space above any bottom buttons
+
+        TableLayoutPanel tlp = new TableLayoutPanel 
+        { 
+            Dock = DockStyle.Top, 
+            AutoSize = true, 
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            ColumnCount = 2,
+            Padding = new Padding(0, 0, 15, 0) // Leave space for scrollbar
+        };
         tlp.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         tlp.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        
         foreach (var (labelText, control) in pairs)
         {
             tlp.Controls.Add(new Label { Text = labelText, AutoSize = true, Anchor = AnchorStyles.Left, Padding = new Padding(2) });
+            control.Dock = DockStyle.Fill;
             tlp.Controls.Add(control);
         }
-        gb.Controls.Add(tlp);
+        scrollPanel.Controls.Add(tlp);
     }
     // ✅ Allow only numbers + control keys (Backspace, Delete etc.)
     private void NumericOnly_KeyPress(object sender, KeyPressEventArgs e)
@@ -902,7 +963,8 @@ public class GenerateInvoiceForm : Form
                         "",
                         "Unpaid",
                         "Posted",
-                        invoiceNumber
+                        invoiceNumber,
+                        cmbScenario.Text
                     );
 
                     // Save items
@@ -955,6 +1017,8 @@ public class GenerateInvoiceForm : Form
                     ClearFields();
                     UpdateSubtotal();
                     txtInvoiceNumber.Text = GetNextInvoiceNumber().ToString();
+                    btnPost.Enabled = false;
+                    btnSaveDraft.Enabled = false;
                 }
                 catch (Exception ex)
                 {
@@ -982,6 +1046,111 @@ public class GenerateInvoiceForm : Form
             btnValidateInvoice.Enabled = true;
             progressBar.Visible = false;
             this.UseWaitCursor = false;
+        }
+    }
+
+    private void btnSaveDraft_Click(object sender, EventArgs e)
+    {
+        try
+        {
+            if (cmbSellerName.SelectedValue == null)
+            {
+                MessageBox.Show("⚠️ Please select a Seller first!", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (cmbBuyerName.SelectedValue == null)
+            {
+                MessageBox.Show("⚠️ Please select a Buyer first!", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (dgvItems.Rows.Count == 0)
+            {
+                MessageBox.Show("⚠️ Please add at least one item to the invoice!", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int customerId = Convert.ToInt32(cmbBuyerName.SelectedValue);
+            int sellerId = Convert.ToInt32(cmbSellerName.SelectedValue);
+
+            decimal subTotal = 0, totalTax = 0, grandTotal = 0;
+            foreach (DataGridViewRow r in dgvItems.Rows)
+            {
+                if (r.IsNewRow) continue;
+                subTotal += Convert.ToDecimal(r.Cells["TotalValue"].Value ?? 0m);
+                totalTax += Convert.ToDecimal(r.Cells["SalesTaxAmount"].Value ?? 0m);
+            }
+            grandTotal = subTotal + totalTax + dgvItems.Rows.Cast<DataGridViewRow>().Sum(r => Convert.ToDecimal(r.Cells["FurtherTaxAmount"].Value ?? 0m));
+
+            // Save invoice header as Draft
+            int insertedInvoiceId = DatabaseHelper.AddInvoice(
+                customerId,
+                sellerId,
+                DateTime.Now,
+                subTotal,
+                totalTax,
+                0m,
+                grandTotal,
+                "",
+                "Unpaid",
+                "Saved",
+                null,
+                cmbScenario.Text
+            );
+
+            // Save items
+            foreach (DataGridViewRow row in dgvItems.Rows)
+            {
+                if (row.IsNewRow) continue;
+                string hsCode = row.Cells["HSCode"].Value?.ToString();
+                int productId = DatabaseHelper.GetProductIdByHsCode(hsCode);
+                if (productId == -1) productId = 0; // fallback
+
+                string desc = row.Cells["Product_Desc"].Value?.ToString();
+                decimal qty = Convert.ToDecimal(row.Cells["Quantity"].Value ?? 0m);
+                string rate = row.Cells["Rate"].Value?.ToString() ?? "";
+                decimal unitPrice = Convert.ToDecimal(row.Cells["UnitPrice"].Value ?? 0m);
+                decimal totalVal = Convert.ToDecimal(row.Cells["TotalValue"].Value ?? 0m);
+                decimal valueExcl = Convert.ToDecimal(row.Cells["ValueExclGST"].Value ?? 0m);
+                decimal salesTax = Convert.ToDecimal(row.Cells["SalesTaxAmount"].Value ?? 0m);
+                decimal further = Convert.ToDecimal(row.Cells["FurtherTaxAmount"].Value ?? 0m);
+                decimal discountVal = Convert.ToDecimal(row.Cells["Discount"].Value ?? 0m);
+                string saleType = row.Cells["saleType"].Value?.ToString() ?? "Goods at standard rate";
+                string sroSerial = row.Cells["sroItemSerialNo"]?.Value?.ToString() ?? "";
+                string sroSched = row.Cells["sroScheduleNo"]?.Value?.ToString() ?? "";
+
+                DatabaseHelper.AddInvoiceItem(
+                    insertedInvoiceId,
+                    productId,
+                    desc,
+                    qty,
+                    rate,
+                    unitPrice,
+                    totalVal,
+                    valueExcl,
+                    0m,
+                    salesTax,
+                    0m,
+                    0m,
+                    further,
+                    0m,
+                    discountVal,
+                    saleType,
+                    sroSerial,
+                    sroSched
+                );
+            }
+
+            MessageBox.Show("✅ Invoice saved as Draft successfully!", "Draft Saved", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            dgvItems.Rows.Clear();
+            ClearFields();
+            UpdateSubtotal();
+            txtInvoiceNumber.Text = GetNextInvoiceNumber().ToString();
+            btnPost.Enabled = false;
+            btnSaveDraft.Enabled = false;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("❌ Failed to save draft: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -1045,7 +1214,7 @@ public class GenerateInvoiceForm : Form
                 fixedNotifiedValueOrRetailPrice = 0.00m,
                 salesTaxApplicable = salesTaxApplicable,
                 salesTaxWithheldAtSource = 0.00m,
-                extraTax = "0",
+                extraTax = 0.00m,
                 furtherTax = furtherTax,
                 fedPayable = 0.00m,
                 discount = discount,
@@ -1087,9 +1256,10 @@ public class GenerateInvoiceForm : Form
                 );
 
                 if (action == "Validation")
+                {
                     btnPost.Enabled = true;
-                // sirf validation ke baad post enable hoga
-                // sirf validation ke baad post enable hoga
+                    btnSaveDraft.Enabled = true;
+                }
             }
             else
             {
@@ -1100,7 +1270,10 @@ public class GenerateInvoiceForm : Form
                     MessageBoxIcon.Error
                 );
                 if (action == "Validation")
+                {
                     btnPost.Enabled = false;
+                    btnSaveDraft.Enabled = false;
+                }
             }
         }
         catch
@@ -1112,7 +1285,10 @@ public class GenerateInvoiceForm : Form
                 MessageBoxIcon.Warning
             );
             if (action == "Validation")
+            {
                 btnPost.Enabled = false;
+                btnSaveDraft.Enabled = false;
+            }
         }
     }
 

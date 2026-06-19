@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Data.SQLite;
@@ -187,10 +187,37 @@ CREATE TABLE IF NOT EXISTS Invoices (
     notes TEXT,                                    -- additional notes
     status TEXT DEFAULT 'Unpaid',                  -- payment status (Unpaid/Paid)
     postStatus TEXT DEFAULT 'Saved',               -- Saved / Posted / Failed
+    scenarioId TEXT DEFAULT 'SN001',
     FOREIGN KEY(sellerId) REFERENCES Sellers(sellerId),
     FOREIGN KEY(customerId) REFERENCES Customers(customerId)
 );";
                 using (var cmd = new SQLiteCommand(createInvoices, conn)) cmd.ExecuteNonQuery();
+
+                // Ensure 'scenarioId' column exists in Invoices table in case DB was created before
+                using (var checkCmd = new SQLiteCommand("PRAGMA table_info('Invoices');", conn))
+                {
+                    using (var reader = checkCmd.ExecuteReader())
+                    {
+                        bool hasScenario = false;
+                        while (reader.Read())
+                        {
+                            string colName = reader[1].ToString();
+                            if (string.Equals(colName, "scenarioId", StringComparison.OrdinalIgnoreCase))
+                            {
+                                hasScenario = true;
+                                break;
+                            }
+                        }
+
+                        if (!hasScenario)
+                        {
+                            using (var alter = new SQLiteCommand("ALTER TABLE Invoices ADD COLUMN scenarioId TEXT DEFAULT 'SN001';", conn))
+                            {
+                                alter.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
 
                 // InvoiceItems (line items) - full FBR related fields kept here
                 string createInvoiceItems = @"
@@ -254,9 +281,30 @@ CREATE TABLE IF NOT EXISTS Payments (
     method TEXT,
     status TEXT,
     paymentDate TEXT,
+    checkNo TEXT,
+    bankName TEXT,
     FOREIGN KEY(invoiceId) REFERENCES Invoices(invoiceId)
 );";
                 using (var cmd = new SQLiteCommand(createPayments, conn)) cmd.ExecuteNonQuery();
+
+                // Ensure checkNo and bankName columns exist for older DBs
+                using (var checkCmd = new SQLiteCommand("PRAGMA table_info('Payments');", conn))
+                {
+                    bool hasCheckNo = false, hasBankName = false;
+                    using (var reader = checkCmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            string colName = reader[1].ToString();
+                            if (string.Equals(colName, "checkNo", StringComparison.OrdinalIgnoreCase)) hasCheckNo = true;
+                            if (string.Equals(colName, "bankName", StringComparison.OrdinalIgnoreCase)) hasBankName = true;
+                        }
+                    }
+                    if (!hasCheckNo)
+                        using (var alt = new SQLiteCommand("ALTER TABLE Payments ADD COLUMN checkNo TEXT;", conn)) alt.ExecuteNonQuery();
+                    if (!hasBankName)
+                        using (var alt = new SQLiteCommand("ALTER TABLE Payments ADD COLUMN bankName TEXT;", conn)) alt.ExecuteNonQuery();
+                }
             }
 
             // Perform auto-backup
@@ -681,13 +729,13 @@ WHERE ii.invoiceId = @invoiceId";
         }
 
         // ---------------- Payments ----------------
-        public static void AddPayment(int invoiceId, decimal amount, string method, string status)
+        public static void AddPayment(int invoiceId, decimal amount, string method, string status, string checkNo = null, string bankName = null)
         {
             using (var conn = new SQLiteConnection(ConnectionString))
             {
                 conn.Open();
-                string sql = @"INSERT INTO Payments (invoiceId, amount, method, status, paymentDate)
-                       VALUES (@invoiceId, @amount, @method, @status, @paymentDate)";
+                string sql = @"INSERT INTO Payments (invoiceId, amount, method, status, paymentDate, checkNo, bankName)
+                       VALUES (@invoiceId, @amount, @method, @status, @paymentDate, @checkNo, @bankName)";
                 using (var cmd = new SQLiteCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@invoiceId", invoiceId);
@@ -695,6 +743,8 @@ WHERE ii.invoiceId = @invoiceId";
                     cmd.Parameters.AddWithValue("@method", method);
                     cmd.Parameters.AddWithValue("@status", status);
                     cmd.Parameters.AddWithValue("@paymentDate", DateTime.Now.ToString("yyyy-MM-dd"));
+                    cmd.Parameters.AddWithValue("@checkNo", checkNo ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@bankName", bankName ?? (object)DBNull.Value);
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -715,6 +765,22 @@ WHERE ii.invoiceId = @invoiceId";
                 }
             }
         }
+
+        public static void UpdateInvoiceStatus(int invoiceId, string status)
+        {
+            using (var conn = new SQLiteConnection(ConnectionString))
+            {
+                conn.Open();
+                string sql = "UPDATE Invoices SET status=@status WHERE invoiceId=@invoiceId";
+                using (var cmd = new SQLiteCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@status", status);
+                    cmd.Parameters.AddWithValue("@invoiceId", invoiceId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         public static void AddInvoiceItem(
     int invoiceId,
     int productId,
@@ -785,7 +851,8 @@ VALUES
     string notes,
     string status = "Unpaid",
     string postStatus = "Unpost",
-    string fbrInvoiceNumber = null)
+    string fbrInvoiceNumber = null,
+    string scenarioId = "SN001")
         {
             using (var conn = new SQLiteConnection(ConnectionString))
             {
@@ -796,9 +863,9 @@ VALUES
 
                 string sql = @"
 INSERT INTO Invoices 
-(invoiceNumber, fbrInvoiceNumber, invoiceDate, customerId, sellerId, subTotal, totalTax, discount, grandTotal, notes, status, postStatus)
+(invoiceNumber, fbrInvoiceNumber, invoiceDate, customerId, sellerId, subTotal, totalTax, discount, grandTotal, notes, status, postStatus, scenarioId)
 VALUES 
-(@invoiceNumber, @fbrInvoiceNumber, @invoiceDate, @customerId, @sellerId, @subTotal, @totalTax, @discount, @grandTotal, @notes, @status, @postStatus);
+(@invoiceNumber, @fbrInvoiceNumber, @invoiceDate, @customerId, @sellerId, @subTotal, @totalTax, @discount, @grandTotal, @notes, @status, @postStatus, @scenarioId);
 SELECT last_insert_rowid();";
 
                 using (var cmd = new SQLiteCommand(sql, conn))
@@ -815,6 +882,7 @@ SELECT last_insert_rowid();";
                     cmd.Parameters.AddWithValue("@notes", notes);
                     cmd.Parameters.AddWithValue("@status", status);
                     cmd.Parameters.AddWithValue("@postStatus", postStatus);
+                    cmd.Parameters.AddWithValue("@scenarioId", scenarioId);
 
                     long id = (long)cmd.ExecuteScalar();
                     return (int)id;
@@ -832,7 +900,8 @@ SELECT last_insert_rowid();";
     string notes,
     string status = "Unpaid",
     string postStatus = "Posted",
-    string fbrInvoiceNumber = "")
+    string fbrInvoiceNumber = "",
+    string scenarioId = "SN001")
         {
             using (var conn = new SQLiteConnection(ConnectionString))
             {
@@ -843,9 +912,9 @@ SELECT last_insert_rowid();";
 
                 string sql = @"
 INSERT INTO Invoices 
-(invoiceNumber, fbrInvoiceNumber, invoiceDate, customerId, sellerId, subTotal, totalTax, discount, grandTotal, notes, status, postStatus)
+(invoiceNumber, fbrInvoiceNumber, invoiceDate, customerId, sellerId, subTotal, totalTax, discount, grandTotal, notes, status, postStatus, scenarioId)
 VALUES 
-(@invoiceNumber, @fbrInvoiceNumber, @invoiceDate, @customerId, @sellerId, @subTotal, @totalTax, @discount, @grandTotal, @notes, @status, @postStatus);
+(@invoiceNumber, @fbrInvoiceNumber, @invoiceDate, @customerId, @sellerId, @subTotal, @totalTax, @discount, @grandTotal, @notes, @status, @postStatus, @scenarioId);
 SELECT last_insert_rowid();";
 
                 using (var cmd = new SQLiteCommand(sql, conn))
@@ -863,6 +932,7 @@ SELECT last_insert_rowid();";
                     cmd.Parameters.AddWithValue("@status", status);
                     cmd.Parameters.AddWithValue("@postStatus", postStatus);
                     cmd.Parameters.AddWithValue("@fbrInvoiceNumber", fbrInvoiceNumber);
+                    cmd.Parameters.AddWithValue("@scenarioId", scenarioId);
                     long id = (long)cmd.ExecuteScalar();
                     return (int)id;
                 }
@@ -994,7 +1064,9 @@ SELECT last_insert_rowid();";
             c.customerBusinessName, 
             c.customerNTNCNIC, 
             c.customerProvince, 
-            c.customerAddress
+            c.customerAddress,
+            c.registrationType,
+            i.scenarioId
         FROM Invoices i
         LEFT JOIN Sellers s ON i.sellerId = s.sellerId
         LEFT JOIN Customers c ON i.customerId = c.customerId
@@ -1013,14 +1085,17 @@ SELECT last_insert_rowid();";
             p.productId, 
             p.hsCode, 
             p.productDescription, 
+            p.uoM, 
             ii.description, 
             ii.quantity, 
             ii.rate, 
             ii.unitPrice, 
             ii.totalValues, 
+            ii.valueSalesExcludingST,
             ii.salesTaxApplicable, 
             ii.furtherTax, 
             ii.discount,
+            ii.saleType,
             ii.sroItemSerialNo,
             ii.sroScheduleNo
         FROM InvoiceItems ii
