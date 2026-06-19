@@ -1785,10 +1785,10 @@ public class InvoicePreviewForm : Form
             // Helper: draw text strictly clipped to a column cell.
             // PDFsharp DrawString with XRect positions text but does NOT clip it;
             // IntersectClip + Save/Restore enforces a hard cell boundary.
-            Action<string, XFont, XBrush, int, double, double, XStringFormat> drawCell = (text, font, brush, colIdx, rowY, rowH, fmt) =>
+            Action<string, XFont, XBrush, int, double, double, XStringFormat> drawCell = (text, font, brush, colIdx, cellY, rowH, fmt) =>
             {
                 double pad = 3.0;
-                XRect cellRect = new XRect(colX[colIdx] + pad, rowY + 1, colWidths[colIdx] - pad * 2, rowH - 2);
+                XRect cellRect = new XRect(colX[colIdx] + pad, cellY + 1, colWidths[colIdx] - pad * 2, rowH - 2);
                 XGraphicsState clipState = gfx.Save();
                 gfx.IntersectClip(cellRect);
                 gfx.DrawString(text, font, brush, cellRect, fmt);
