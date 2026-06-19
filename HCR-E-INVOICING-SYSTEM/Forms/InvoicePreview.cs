@@ -1495,7 +1495,7 @@ public class InvoicePreviewForm : Form
             XFont regularFont = new XFont("Arial", 8.5, XFontStyleEx.Regular);
             XFont smallFont = new XFont("Arial", 7.5, XFontStyleEx.Regular);
             XFont italicFont = new XFont("Arial", 8, XFontStyleEx.Italic);
-            XFont tableHeaderFont = new XFont("Arial", 8, XFontStyleEx.Bold);
+            XFont tableHeaderFont = new XFont("Arial", 7, XFontStyleEx.Bold);
             XFont tableBodyFont = new XFont("Arial", 8, XFontStyleEx.Regular);
 
             // Layout settings
@@ -1503,7 +1503,7 @@ public class InvoicePreviewForm : Form
             double pageHeight = 842.0; // A4 Height
             double margin = 36.0;      // 0.5 inch margins
             double printableWidth = pageWidth - 2 * margin; // 523pt
-            double contentLimitY = 745.0; // Page break threshold (leave room for totals and footer)
+            double contentLimitY = 730.0; // Page break threshold (leave room for totals and footer)
 
             // Read footer text directly from DB header (safe for background thread)
             string pdfFooterText = header.Table.Columns.Contains("invoiceFooter") && header["invoiceFooter"] != DBNull.Value
@@ -1574,8 +1574,10 @@ public class InvoicePreviewForm : Form
                     gfx.DrawString(sName, new XFont("Arial", 14, XFontStyleEx.Bold), navyBrush, margin, logoY + 15);
                 }
 
-                // Title
-                gfx.DrawString("SALES TAX INVOICE", titleFont, navyBrush, margin + 180, 55);
+                // Title - Centered
+                XSize titleSize = gfx.MeasureString("SALES TAX INVOICE", titleFont);
+                double titleX = margin + (printableWidth - titleSize.Width) / 2.0;
+                gfx.DrawString("SALES TAX INVOICE", titleFont, navyBrush, titleX, 55);
 
                 // Right side: FBR logo & QR code
                 double rightX = margin + printableWidth;
@@ -1713,26 +1715,48 @@ public class InvoicePreviewForm : Form
                 currentY += boxHeight + 20;
             };
 
-            // Helper: draw footer on current page using direct coordinates (no XRect clipping)
-            Action drawPageFooter = () =>
+            // Helper: draw footer on current page using direct coordinates (centered)
+            // NOTE: page number is drawn in the second pass below so totalPages is known.
+            Action<int, int> drawPageFooterWithPageNum = (pgIdx, pgTotal) =>
             {
                 if (gfx == null) return;
-                double fy = pageHeight - 58;
+                double fy = pageHeight - 72; // separator line Y
                 // Separator line
                 gfx.DrawLine(new XPen(XColor.FromArgb(180, 200, 220), 0.75), margin, fy, margin + printableWidth, fy);
-                // Footer contact text - direct draw, centered manually
-                double fTextY = fy + 8;
-                gfx.DrawString(pdfFooterText, smallFont, grayBrush, margin, fTextY);
-                // Computer generated notice
-                double cgY = fTextY + 13;
-                gfx.DrawString("This is a computer generated invoice. No signature or stamp required.", smallFont, grayBrush, margin, cgY);
+
+                // Footer contact text - centered
+                double fTextY = fy + 10;
+                XSize footerSize = gfx.MeasureString(pdfFooterText, smallFont);
+                double footerTextX = margin + (printableWidth - footerSize.Width) / 2.0;
+                if (footerTextX < margin) footerTextX = margin;
+                gfx.DrawString(pdfFooterText, smallFont, grayBrush, footerTextX, fTextY);
+
+                // Computer generated notice - centered
+                double cgY = fTextY + 14;
+                string cgText = "This is a computer generated invoice. No signature or stamp required.";
+                XSize cgSize = gfx.MeasureString(cgText, smallFont);
+                double cgX = margin + (printableWidth - cgSize.Width) / 2.0;
+                if (cgX < margin) cgX = margin;
+                gfx.DrawString(cgText, smallFont, grayBrush, cgX, cgY);
+
+                // Page number - right aligned
+                if (pgTotal > 1)
+                {
+                    string pageInfo = $"Page {pgIdx} of {pgTotal}";
+                    XSize pgSize = gfx.MeasureString(pageInfo, smallFont);
+                    gfx.DrawString(pageInfo, smallFont, grayBrush, margin + printableWidth - pgSize.Width, cgY);
+                }
             };
+            // Compat wrapper used by addPage (called before totalPages is known — page num added in 2nd pass)
+            Action drawPageFooter = () => drawPageFooterWithPageNum(0, 0);
 
             // Function to add a page
             Action addPage = () =>
             {
-                // Draw footer on the current page before leaving it
-                if (gfx != null) drawPageFooter();
+                if (gfx != null)
+                {
+                    gfx.Dispose();
+                }
 
                 PdfPage page = pdfDoc.AddPage();
                 page.Size = PdfSharp.PageSize.A4;
@@ -1744,9 +1768,11 @@ public class InvoicePreviewForm : Form
             // Add first page
             addPage();
 
-            // Column Widths
-            // HS Code, Description, Unit Price, Qty, Gross, Disc, Excl Tax, Tax %, Tax Val, Incl Tax
-            double[] colWidths = { 40.0, 133.0, 42.0, 25.0, 45.0, 42.0, 52.0, 28.0, 52.0, 64.0 };
+            // Column Widths — must sum to printableWidth (523pt)
+            // Code, Item Description, Unit Price, Qty, Gross, Discount, Amt Excl., Tax %, Tax Val, Amt Incl.
+            // Each width is sized to fit both the header text (7pt Bold) and numeric data (8pt Regular)
+            double[] colWidths = { 50.0, 129.0, 50.0, 25.0, 44.0, 47.0, 52.0, 30.0, 46.0, 50.0 };
+            // Total = 50+129+50+25+44+47+52+30+46+50 = 523 ✓
             double[] colX = new double[colWidths.Length];
             colX[0] = margin;
             for (int i = 1; i < colWidths.Length; i++)
@@ -1754,28 +1780,43 @@ public class InvoicePreviewForm : Form
                 colX[i] = colX[i - 1] + colWidths[i - 1];
             }
 
-            string[] headers = { "Item Code", "Item Description", "Unit Price", "Qty", "Gross", "Discount", "Amt Excl.", "Tax%", "S.Tax Val", "Amt Incl." };
+            string[] headers = { "Code", "Item Description", "Unit Price", "Qty", "Gross", "Discount", "Amt Excl.", "Tax %", "Tax Val", "Amt Incl." };
+
+            // Helper: draw text in a cell rectangle with padding, clipped to cell bounds
+            Action<string, XFont, XBrush, int, double, double, XStringFormat> drawCell = (text, font, brush, colIdx, rowY, rowH, fmt) =>
+            {
+                double pad = 3.0;
+                XRect cellRect = new XRect(colX[colIdx] + pad, rowY + 1, colWidths[colIdx] - pad * 2, rowH - 2);
+                gfx.DrawString(text, font, brush, cellRect, fmt);
+            };
 
             // Helper to draw table header row
             Action drawTableHeaderRow = () =>
             {
+                double hdrH = 22.0;
                 // Draw header background band
-                gfx.DrawRectangle(navyBrush, margin, currentY, printableWidth, 22);
-                
-                for (int i = 0; i < colWidths.Length; i++)
+                gfx.DrawRectangle(navyBrush, margin, currentY, printableWidth, hdrH);
+
+                // Draw white vertical dividers in header
+                XPen whiteGridPen = new XPen(XColor.FromArgb(255, 255, 255), 0.5);
+                for (int i = 1; i < colWidths.Length; i++)
                 {
-                    XStringFormat format = XStringFormats.CenterRight;
-                    if (i == 0) format = XStringFormats.Center;
-                    else if (i == 1) format = XStringFormats.CenterLeft;
-
-                    double xPos = colX[i];
-                    if (format == XStringFormats.Center) xPos += colWidths[i] / 2;
-                    else if (format == XStringFormats.CenterRight) xPos += colWidths[i] - 4;
-                    else if (format == XStringFormats.CenterLeft) xPos += 4;
-
-                    gfx.DrawString(headers[i], tableHeaderFont, whiteBrush, xPos, currentY + 11, format);
+                    gfx.DrawLine(whiteGridPen, colX[i], currentY, colX[i], currentY + hdrH);
                 }
-                currentY += 22;
+
+                // Draw header text inside each cell rect (clipped)
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    XStringFormat fmt;
+                    if (i == 0)      fmt = XStringFormats.Center;    // Code — centered
+                    else if (i == 1) fmt = XStringFormats.CenterLeft; // Description — left
+                    else             fmt = XStringFormats.CenterRight; // Numbers — right
+
+                    double pad = 3.0;
+                    XRect cellRect = new XRect(colX[i] + pad, currentY + 1, colWidths[i] - pad * 2, hdrH - 2);
+                    gfx.DrawString(headers[i], tableHeaderFont, whiteBrush, cellRect, fmt);
+                }
+                currentY += hdrH;
             };
 
             // Draw first table header
@@ -1830,27 +1871,35 @@ public class InvoicePreviewForm : Form
                 XBrush rowBrush = (itemIndex % 2 == 0) ? whiteBrush : lightBgBrush;
                 gfx.DrawRectangle(borderPen, rowBrush, margin, currentY, printableWidth, rowHeight);
 
-                // Draw cell contents
-                // 1. hsCode
-                gfx.DrawString(hsCode, tableBodyFont, darkTextBrush, colX[0] + colWidths[0]/2, currentY + rowHeight/2, XStringFormats.Center);
+                // Draw vertical gridlines in table body
+                for (int i = 1; i < colWidths.Length; i++)
+                {
+                    gfx.DrawLine(borderPen, colX[i], currentY, colX[i], currentY + rowHeight);
+                }
 
-                // 2. description (multiline)
-                double descY = currentY + 11;
+                // Draw cell contents using XRect so text is clipped within each column
+                // 1. hsCode — centered
+                drawCell(hsCode, tableBodyFont, darkTextBrush, 0, currentY, rowHeight, XStringFormats.Center);
+
+                // 2. description — left aligned, multiline
+                double descPad = 3.0;
+                double descY = currentY + 10;
                 for (int l = 0; l < descLines.Count; l++)
                 {
-                    gfx.DrawString(descLines[l], tableBodyFont, darkTextBrush, colX[1] + 4, descY, XStringFormats.CenterLeft);
+                    XRect descLineRect = new XRect(colX[1] + descPad, descY - 8, colWidths[1] - descPad * 2, 12);
+                    gfx.DrawString(descLines[l], tableBodyFont, darkTextBrush, descLineRect, XStringFormats.CenterLeft);
                     descY += 11;
                 }
 
-                // Numbers: Unit Price, Qty, Gross, Discount, Amt Excl, Tax %, S.Tax Val, Amt Incl
-                gfx.DrawString($"{unitPrice:N2}", tableBodyFont, darkTextBrush, colX[2] + colWidths[2] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
-                gfx.DrawString($"{qty:N0}", tableBodyFont, darkTextBrush, colX[3] + colWidths[3] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
-                gfx.DrawString($"{totalGross:N2}", tableBodyFont, darkTextBrush, colX[4] + colWidths[4] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
-                gfx.DrawString($"{discount:N2}", tableBodyFont, darkTextBrush, colX[5] + colWidths[5] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
-                gfx.DrawString($"{totalEx:N2}", tableBodyFont, darkTextBrush, colX[6] + colWidths[6] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
-                gfx.DrawString($"{rate:0.##}%", tableBodyFont, darkTextBrush, colX[7] + colWidths[7] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
-                gfx.DrawString($"{taxValue:N2}", tableBodyFont, darkTextBrush, colX[8] + colWidths[8] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
-                gfx.DrawString($"{totalInc:N2}", tableBodyFont, darkTextBrush, colX[9] + colWidths[9] - 4, currentY + rowHeight/2, XStringFormats.CenterRight);
+                // 3. Numeric columns — right aligned, vertically centered using XRect
+                drawCell($"{unitPrice:N2}",  tableBodyFont, darkTextBrush, 2, currentY, rowHeight, XStringFormats.CenterRight);
+                drawCell($"{qty:N0}",        tableBodyFont, darkTextBrush, 3, currentY, rowHeight, XStringFormats.CenterRight);
+                drawCell($"{totalGross:N2}", tableBodyFont, darkTextBrush, 4, currentY, rowHeight, XStringFormats.CenterRight);
+                drawCell($"{discount:N2}",   tableBodyFont, darkTextBrush, 5, currentY, rowHeight, XStringFormats.CenterRight);
+                drawCell($"{totalEx:N2}",    tableBodyFont, darkTextBrush, 6, currentY, rowHeight, XStringFormats.CenterRight);
+                drawCell($"{rate:0.##}%",    tableBodyFont, darkTextBrush, 7, currentY, rowHeight, XStringFormats.CenterRight);
+                drawCell($"{taxValue:N2}",   tableBodyFont, darkTextBrush, 8, currentY, rowHeight, XStringFormats.CenterRight);
+                drawCell($"{totalInc:N2}",   tableBodyFont, darkTextBrush, 9, currentY, rowHeight, XStringFormats.CenterRight);
 
                 currentY += rowHeight;
                 itemIndex++;
@@ -1948,20 +1997,26 @@ public class InvoicePreviewForm : Form
                 }
             }
 
-            // Draw footer on the LAST page (addPage draws it on all pages except the last)
-            drawPageFooter();
+            // Dispose the last page's gfx from the first pass
+            if (gfx != null)
+            {
+                gfx.Dispose();
+            }
 
-            // SECOND PASS: Add page numbers only
+            // SECOND PASS: Draw footer on EVERY page now that totalPages is known,
+            // so page numbers are accurate on all pages.
             int totalPages = pdfDoc.Pages.Count;
             for (int i = 0; i < totalPages; i++)
             {
-                PdfPage page = pdfDoc.Pages[i];
-                XGraphics pgGfx = XGraphics.FromPdfPage(page);
-                double fy = pageHeight - 58;
-                string pageInfo = $"Page {i + 1} of {totalPages}";
-                pgGfx.DrawString(pageInfo, smallFont, grayBrush, margin + printableWidth / 2 - 20, fy + 26);
-                pgGfx.Dispose();
+                PdfPage pg = pdfDoc.Pages[i];
+                using (XGraphics pgGfx = XGraphics.FromPdfPage(pg))
+                {
+                    // Re-assign gfx so drawPageFooterWithPageNum targets correct page
+                    gfx = pgGfx;
+                    drawPageFooterWithPageNum(i + 1, totalPages);
+                }
             }
+            gfx = null; // done
 
             // Save PDF
             pdfDoc.Save(filePath);
