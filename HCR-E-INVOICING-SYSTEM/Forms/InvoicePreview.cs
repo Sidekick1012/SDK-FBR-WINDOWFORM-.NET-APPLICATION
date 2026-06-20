@@ -1475,9 +1475,9 @@ public class InvoicePreviewForm : Form
             XColor navyColor = XColor.FromArgb(30, 60, 114);
             XColor grayColor = XColor.FromArgb(74, 85, 104);
             XColor lightBgColor = XColor.FromArgb(248, 250, 252);
-            XColor lightBorderColor = XColor.FromArgb(226, 232, 240);
+            XColor lightBorderColor = XColor.FromArgb(0, 0, 0);       // BLACK borders
             XColor darkTextColor = XColor.FromArgb(45, 55, 72);
-            XColor lineSeparatorColor = XColor.FromArgb(203, 213, 225);
+            XColor lineSeparatorColor = XColor.FromArgb(0, 0, 0);      // BLACK separators
 
             XBrush navyBrush = new XSolidBrush(navyColor);
             XBrush grayBrush = new XSolidBrush(grayColor);
@@ -1485,7 +1485,7 @@ public class InvoicePreviewForm : Form
             XBrush whiteBrush = XBrushes.White;
             XBrush lightBgBrush = new XSolidBrush(lightBgColor);
 
-            XPen borderPen = new XPen(lightBorderColor, 1);
+            XPen borderPen = new XPen(lightBorderColor, 0.8);
             XPen linePen = new XPen(lineSeparatorColor, 0.75);
 
             // Fonts
@@ -1574,10 +1574,21 @@ public class InvoicePreviewForm : Form
                     gfx.DrawString(sName, new XFont("Arial", 14, XFontStyleEx.Bold), navyBrush, margin, logoY + 15);
                 }
 
-                // Title - Centered
-                XSize titleSize = gfx.MeasureString("SALES TAX INVOICE", titleFont);
-                double titleX = margin + (printableWidth - titleSize.Width) / 2.0;
-                gfx.DrawString("SALES TAX INVOICE", titleFont, navyBrush, titleX, 55);
+                // === SALES TAX INVOICE Banner (full-width navy strip below logo row) ===
+                double bannerY = logoY + logoHeight + 10; // just below logo/QR area
+                double bannerH = 26.0;
+                // Navy filled rectangle spanning full printable width
+                gfx.DrawRectangle(navyBrush, margin, bannerY, printableWidth, bannerH);
+                // White text — centered horizontally and vertically in banner
+                XFont bannerFont = new XFont("Arial", 13, XFontStyleEx.Bold);
+                XRect bannerRect = new XRect(margin, bannerY, printableWidth, bannerH);
+                XGraphicsState bannerClip = gfx.Save();
+                gfx.IntersectClip(bannerRect);
+                gfx.DrawString("SALES TAX INVOICE", bannerFont, whiteBrush, bannerRect, XStringFormats.Center);
+                gfx.Restore(bannerClip);
+                // Thin gold/amber accent line below banner for extra flair
+                XPen accentPen = new XPen(XColor.FromArgb(200, 160, 40), 1.5);
+                gfx.DrawLine(accentPen, margin, bannerY + bannerH, margin + printableWidth, bannerY + bannerH);
 
                 // Right side: FBR logo & QR code
                 double rightX = margin + printableWidth;
@@ -1641,7 +1652,7 @@ public class InvoicePreviewForm : Form
 
 
                 // Meta row: Date, Invoice number, FBR number, status
-                currentY = 125;
+                currentY = logoY + logoHeight + 10 + 26 + 1.5 + 12; // below banner + accent line
                 gfx.DrawLine(new XPen(navyColor, 1.5), margin, currentY, margin + printableWidth, currentY);
                 currentY += 15;
 
@@ -1769,10 +1780,10 @@ public class InvoicePreviewForm : Form
             addPage();
 
             // Column Widths — must sum to printableWidth (523pt)
-            // Code, Item Description, Unit Price, Qty, Gross, Discount, Amt Excl., Tax %, Tax Val, Amt Incl.
+            // Code, Item Description, Unit Price, Qty, Gross Value, Discount, Amt Excl S.Tax, Tax %, Sales Tax Value, Amt Incl S.Tax
             // Each width is sized to fit both the header text (7pt Bold) and numeric data (8pt Regular)
-            double[] colWidths = { 50.0, 129.0, 50.0, 25.0, 44.0, 47.0, 52.0, 30.0, 46.0, 50.0 };
-            // Total = 50+129+50+25+44+47+52+30+46+50 = 523 ✓
+            double[] colWidths = { 42.0, 110.0, 48.0, 24.0, 48.0, 44.0, 57.0, 28.0, 62.0, 60.0 };
+            // Total = 42+110+48+24+48+44+57+28+62+60 = 523 ✓
             double[] colX = new double[colWidths.Length];
             colX[0] = margin;
             for (int i = 1; i < colWidths.Length; i++)
@@ -1780,7 +1791,7 @@ public class InvoicePreviewForm : Form
                 colX[i] = colX[i - 1] + colWidths[i - 1];
             }
 
-            string[] headers = { "Code", "Item Description", "Unit Price", "Qty", "Gross", "Discount", "Amt Excl.", "Tax %", "Tax Val", "Amt Incl." };
+            string[] headers = { "Code", "Item Description", "Unit Price", "Qty", "Gross Value", "Discount", "Amt Excl S.Tax", "Tax %", "Sales Tax Value", "Amt Incl S.Tax" };
 
             // Helper: draw text strictly clipped to a column cell.
             // PDFsharp DrawString with XRect positions text but does NOT clip it;
@@ -1905,7 +1916,7 @@ public class InvoicePreviewForm : Form
                 drawCell($"{totalGross:N2}", tableBodyFont, darkTextBrush, 4, currentY, rowHeight, XStringFormats.CenterRight);
                 drawCell($"{discount:N2}",   tableBodyFont, darkTextBrush, 5, currentY, rowHeight, XStringFormats.CenterRight);
                 drawCell($"{totalEx:N2}",    tableBodyFont, darkTextBrush, 6, currentY, rowHeight, XStringFormats.CenterRight);
-                drawCell($"{rate:0.##}%",    tableBodyFont, darkTextBrush, 7, currentY, rowHeight, XStringFormats.CenterRight);
+                drawCell($"{rate:0.##}",     tableBodyFont, darkTextBrush, 7, currentY, rowHeight, XStringFormats.CenterRight);
                 drawCell($"{taxValue:N2}",   tableBodyFont, darkTextBrush, 8, currentY, rowHeight, XStringFormats.CenterRight);
                 drawCell($"{totalInc:N2}",   tableBodyFont, darkTextBrush, 9, currentY, rowHeight, XStringFormats.CenterRight);
 

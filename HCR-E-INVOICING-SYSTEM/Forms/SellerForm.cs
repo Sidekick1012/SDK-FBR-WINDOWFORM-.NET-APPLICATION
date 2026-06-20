@@ -224,6 +224,11 @@ public class SellerForm : Form
         {
             DataTable dt = DatabaseHelper.GetSellers(filter);
             dgvSellers.DataSource = dt;
+
+            // Restrict to exactly 1 seller profile
+            int totalSellers = DatabaseHelper.GetCount("Sellers");
+            btnAdd.Enabled = (totalSellers == 0);
+            btnAdd.BackColor = (totalSellers == 0) ? ColorTranslator.FromHtml("#C8A84B") : Color.FromArgb(200, 200, 200);
         }
         catch (Exception ex)
         {
@@ -233,6 +238,11 @@ public class SellerForm : Form
 
     private void AddSeller()
     {
+        if (DatabaseHelper.GetCount("Sellers") >= 1)
+        {
+            MessageBox.Show("Only one seller profile is allowed in the system. Please update or delete the existing seller profile.", "Operation Restricted", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
         if (!ValidateFields()) return;
         try
         {

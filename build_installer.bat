@@ -18,18 +18,75 @@ echo Repo Root: %REPO_ROOT%
 echo Solution:  %SLN_FILE%
 echo.
 
-:: 1. Restore NuGet packages first
-echo Restoring NuGet packages...
-nuget restore "%SLN_FILE%"
-if errorlevel 1 (
-    :: Try msbuild restore as fallback
-    msbuild "%SLN_FILE%" /t:Restore /p:Configuration=Release
+:: 1. Detect MSBuild path
+set "MSBUILD_PATH="
+
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe" set "MSBUILD_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" set "MSBUILD_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe" set "MSBUILD_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe"
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe" set "MSBUILD_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+
+if exist "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe" set "MSBUILD_PATH=C:\Program Files\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
+if exist "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" set "MSBUILD_PATH=C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
+if exist "C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe" set "MSBUILD_PATH=C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe"
+if exist "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe" set "MSBUILD_PATH=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+
+:: Check 2019 if not found yet
+if "%MSBUILD_PATH%"=="" (
+    for /d %%i in ("C:\Program Files (x86)\Microsoft Visual Studio\2019\*") do (
+        if exist "%%i\MSBuild\Current\Bin\MSBuild.exe" set "MSBUILD_PATH=%%i\MSBuild\Current\Bin\MSBuild.exe"
+    )
+)
+if "%MSBUILD_PATH%"=="" (
+    for /d %%i in ("C:\Program Files\Microsoft Visual Studio\2019\*") do (
+        if exist "%%i\MSBuild\Current\Bin\MSBuild.exe" set "MSBUILD_PATH=%%i\MSBuild\Current\Bin\MSBuild.exe"
+    )
 )
 
-:: 2. Build the project in Release configuration
+if "%MSBUILD_PATH%"=="" (
+    where msbuild >nul 2>&1
+    if %ERRORLEVEL%==0 (
+        set "MSBUILD_PATH=msbuild"
+    )
+)
+
+if "%MSBUILD_PATH%"=="" (
+    echo [ERROR] MSBuild.exe not found! Please make sure Visual Studio 2022/2019 or Build Tools is installed.
+    pause
+    exit /b 1
+)
+
+echo Found MSBuild: "%MSBUILD_PATH%"
+
+:: 2. Detect/Download NuGet path
+set "NUGET_CMD="
+where nuget >nul 2>&1
+if %ERRORLEVEL%==0 (
+    set "NUGET_CMD=nuget"
+) else (
+    if exist "%REPO_ROOT%\nuget.exe" (
+        set "NUGET_CMD=%REPO_ROOT%\nuget.exe"
+    ) else (
+        echo NuGet.exe not found. Downloading NuGet...
+        powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://dist.nuget.org/win-x86-commandline/latest/nuget.exe' -OutFile '%REPO_ROOT%\nuget.exe'" >nul 2>&1
+        if exist "%REPO_ROOT%\nuget.exe" (
+            set "NUGET_CMD=%REPO_ROOT%\nuget.exe"
+        )
+    )
+)
+
+:: 3. Restore NuGet packages
+echo Restoring NuGet packages...
+if not "%NUGET_CMD%"=="" (
+    "%NUGET_CMD%" restore "%SLN_FILE%"
+) else (
+    "%MSBUILD_PATH%" "%SLN_FILE%" /t:Restore /p:Configuration=Release
+)
+
+:: 4. Build the project in Release configuration
 echo.
 echo Building Release...
-msbuild "%SLN_FILE%" /p:Configuration=Release /p:Platform="Any CPU" /m
+"%MSBUILD_PATH%" "%SLN_FILE%" /p:Configuration=Release /p:Platform="Any CPU" /m
 if errorlevel 1 (
     echo.
     echo [ERROR] Visual Studio / MSBuild failed! Please fix compiler errors.
@@ -46,14 +103,16 @@ echo.
 :: Run Obfuscar to secure the code (skip if not found)
 where obfuscar.console >nul 2>&1
 if %ERRORLEVEL%==0 (
-    obfuscar.console "%PROJ_DIR%\obfuscar.xml"
+    pushd "%PROJ_DIR%"
+    obfuscar.console "obfuscar.xml"
     if errorlevel 1 (
         echo.
         echo [WARNING] Code Obfuscation failed - continuing without obfuscation.
     ) else (
         :: Replace the original executable with the obfuscated one so Inno Setup picks it up
-        copy /Y "%PROJ_DIR%\bin\Release\Obfuscated\HCR-E-INVOICING-SYSTEM.exe" "%PROJ_DIR%\bin\Release\HCR-E-INVOICING-SYSTEM.exe"
+        copy /Y "bin\Release\Obfuscated\HCR-E-INVOICING-SYSTEM.exe" "bin\Release\HCR-E-INVOICING-SYSTEM.exe"
     )
+    popd
 ) else (
     echo [WARNING] Obfuscar not found - skipping obfuscation step.
 )
