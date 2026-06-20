@@ -166,58 +166,17 @@ namespace InvoiceApp
                 BackColor = Color.White
             };
 
-            var pnlFeatures = new TableLayoutPanel()
+            var lblFeatures = new Label()
             {
+                Text = "✓ Fast & Secure Offline Billing\r\n\r\n✓ Real-time FBR Integration\r\n\r\n✓ Automated Local Backups",
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
+                ForeColor = ColorTranslator.FromHtml("#1d4354"), // Brand dark blue
                 Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 4,
-                Padding = new Padding(35, 10, 20, 10),
+                Padding = new Padding(35, 15, 20, 10),
+                TextAlign = ContentAlignment.TopLeft,
                 BackColor = Color.White
             };
-            pnlFeatures.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            pnlFeatures.RowStyles.Add(new RowStyle(SizeType.Absolute, 28)); // Title
-            pnlFeatures.RowStyles.Add(new RowStyle(SizeType.Absolute, 22)); // Bullet 1
-            pnlFeatures.RowStyles.Add(new RowStyle(SizeType.Absolute, 22)); // Bullet 2
-            pnlFeatures.RowStyles.Add(new RowStyle(SizeType.Absolute, 22)); // Bullet 3
-
-            var lblFeatureTitle = new Label()
-            {
-                Text = "Why Choose Sidekick?",
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                ForeColor = ColorTranslator.FromHtml("#1b6656"),
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-            var lblBullet1 = new Label()
-            {
-                Text = "✓ Seamless FBR Integration",
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
-                ForeColor = Color.DimGray,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-            var lblBullet2 = new Label()
-            {
-                Text = "✓ Offline Invoice Generation",
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
-                ForeColor = Color.DimGray,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-            var lblBullet3 = new Label()
-            {
-                Text = "✓ Secure Database Backups",
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
-                ForeColor = Color.DimGray,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-
-            pnlFeatures.Controls.Add(lblFeatureTitle, 0, 0);
-            pnlFeatures.Controls.Add(lblBullet1, 0, 1);
-            pnlFeatures.Controls.Add(lblBullet2, 0, 2);
-            pnlFeatures.Controls.Add(lblBullet3, 0, 3);
-            filler.Controls.Add(pnlFeatures);
+            filler.Controls.Add(lblFeatures);
 
             // Add in clean docking order to prevent internal overlaps
             leftPanel.Controls.Add(topBar);       // DockTop (under logo)
