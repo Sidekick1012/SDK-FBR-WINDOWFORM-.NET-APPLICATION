@@ -1,10 +1,10 @@
-; Script generated for HCR E-Invoicing System
+; Script generated for Sidekick E-Invoicing System
 ; See Inno Setup documentation: http://www.jrsoftware.org/ishelp/
 
-#define AppName "HCR E-Invoicing System"
+#define AppName "Sidekick E-Invoicing System"
 #define AppVersion "1.0.0"
-#define AppPublisher "HCR"
-#define AppExeName "HCR-E-INVOICING-SYSTEM.exe"
+#define AppPublisher "Sidekick"
+#define AppExeName "Sidekick-E-Invoicing.exe"
 
 ; ProjectDir is passed at compile time via /DProjectDir="..." from build_installer.bat
 ; Fallback to the directory of this .iss file if not provided
@@ -22,11 +22,11 @@ DefaultDirName={autopf}\{#AppName}
 DisableProgramGroupPage=yes
 ; Output directory
 OutputDir={#ProjectDir}\InstallerOutput
-OutputBaseFilename=HCR_E_Invoicing_System_Setup
+OutputBaseFilename=Sidekick_E_Invoicing_Setup
 Compression=lzma
 SolidCompression=yes
 ; Icon
-SetupIconFile={#ProjectDir}\HCR-E-INVOICING-SYSTEM\icon-256x256.ico
+SetupIconFile={#ProjectDir}\Sidekick-E-Invoicing\icon-256x256.ico
 UninstallDisplayIcon={app}\{#AppExeName}
 WizardStyle=modern
 
@@ -38,26 +38,26 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 ; Main Executable
-Source: "{#ProjectDir}\HCR-E-INVOICING-SYSTEM\bin\Release\HCR-E-INVOICING-SYSTEM.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ProjectDir}\Sidekick-E-Invoicing\bin\Release\Sidekick-E-Invoicing.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Config file
-Source: "{#ProjectDir}\HCR-E-INVOICING-SYSTEM\bin\Release\HCR-E-INVOICING-SYSTEM.exe.config"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ProjectDir}\Sidekick-E-Invoicing\bin\Release\Sidekick-E-Invoicing.exe.config"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Database - installed into AppData so seller data persists and is not overwritten on updates
-Source: "{#ProjectDir}\HCR-E-INVOICING-SYSTEM\bin\Release\einvoice.db"; DestDir: "{userappdata}\HCREInvoicing"; Flags: ignoreversion onlyifdoesntexist
+Source: "{#ProjectDir}\Sidekick-E-Invoicing\bin\Release\einvoice.db"; DestDir: "{userappdata}\SidekickEInvoicing"; Flags: ignoreversion onlyifdoesntexist
 
 ; Logo and images
-Source: "{#ProjectDir}\HCR-E-INVOICING-SYSTEM\bin\Release\*.png"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ProjectDir}\Sidekick-E-Invoicing\bin\Release\*.png"; DestDir: "{app}"; Flags: ignoreversion
 
 ; DLL Dependencies
-Source: "{#ProjectDir}\HCR-E-INVOICING-SYSTEM\bin\Release\*.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ProjectDir}\Sidekick-E-Invoicing\bin\Release\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 ; SQLite architecture subdirectories
-Source: "{#ProjectDir}\HCR-E-INVOICING-SYSTEM\bin\Release\x64\*"; DestDir: "{app}\x64"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#ProjectDir}\HCR-E-INVOICING-SYSTEM\bin\Release\x86\*"; DestDir: "{app}\x86"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#ProjectDir}\Sidekick-E-Invoicing\bin\Release\x64\*"; DestDir: "{app}\x64"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#ProjectDir}\Sidekick-E-Invoicing\bin\Release\x86\*"; DestDir: "{app}\x86"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Logs directory structure
-Source: "{#ProjectDir}\HCR-E-INVOICING-SYSTEM\bin\Release\Logs\*"; DestDir: "{app}\Logs"; Flags: ignoreversion recursesubdirs createallsubdirs onlyifdoesntexist
+Source: "{#ProjectDir}\Sidekick-E-Invoicing\bin\Release\Logs\*"; DestDir: "{app}\Logs"; Flags: ignoreversion recursesubdirs createallsubdirs onlyifdoesntexist
 
 [Icons]
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExeName}"

@@ -1,7 +1,7 @@
 @echo off
-title HCR E-Invoicing System Installer Builder
+title Sidekick E-Invoicing System Installer Builder
 echo ===================================================
-echo   Building HCR E-Invoicing System Release Build...
+echo   Building Sidekick E-Invoicing System Release Build...
 echo ===================================================
 echo.
 
@@ -10,8 +10,8 @@ set "REPO_ROOT=%~dp0"
 :: Remove trailing backslash
 if "%REPO_ROOT:~-1%"=="\" set "REPO_ROOT=%REPO_ROOT:~0,-1%"
 
-set "SLN_FILE=%REPO_ROOT%\HCR-E-INVOICING-SYSTEM.sln"
-set "PROJ_DIR=%REPO_ROOT%\HCR-E-INVOICING-SYSTEM"
+set "SLN_FILE=%REPO_ROOT%\Sidekick-E-Invoicing.sln"
+set "PROJ_DIR=%REPO_ROOT%\Sidekick-E-Invoicing"
 set "ISS_FILE=%REPO_ROOT%\installer_setup.iss"
 
 echo Repo Root: %REPO_ROOT%
@@ -110,7 +110,7 @@ if %ERRORLEVEL%==0 (
         echo [WARNING] Code Obfuscation failed - continuing without obfuscation.
     ) else (
         :: Replace the original executable with the obfuscated one so Inno Setup picks it up
-        copy /Y "bin\Release\Obfuscated\HCR-E-INVOICING-SYSTEM.exe" "bin\Release\HCR-E-INVOICING-SYSTEM.exe"
+        copy /Y "bin\Release\Obfuscated\Sidekick-E-Invoicing.exe" "bin\Release\Sidekick-E-Invoicing.exe"
     )
     popd
 ) else (
@@ -122,6 +122,13 @@ echo ===================================================
 echo   Compiling Inno Setup Installer Package...
 echo ===================================================
 echo.
+
+:: Ensure einvoice.db exists so Inno Setup can package it
+if not exist "%PROJ_DIR%\bin\Release\einvoice.db" type nul > "%PROJ_DIR%\bin\Release\einvoice.db"
+
+:: Ensure Logs folder and placeholder exist so Inno Setup doesn't fail
+if not exist "%PROJ_DIR%\bin\Release\Logs" mkdir "%PROJ_DIR%\bin\Release\Logs"
+if not exist "%PROJ_DIR%\bin\Release\Logs\placeholder.txt" echo. > "%PROJ_DIR%\bin\Release\Logs\placeholder.txt"
 
 :: 3. Compile the installer using Inno Setup Compiler
 set "ISCC_PATH="
@@ -151,6 +158,6 @@ echo ===================================================
 echo   SUCCESS! Installer created successfully!
 echo ===================================================
 echo.
-echo Location: %REPO_ROOT%\InstallerOutput\HCR_E_Invoicing_System_Setup.exe
+echo Location: %REPO_ROOT%\InstallerOutput\Sidekick_E_Invoicing_Setup.exe
 echo.
 pause
