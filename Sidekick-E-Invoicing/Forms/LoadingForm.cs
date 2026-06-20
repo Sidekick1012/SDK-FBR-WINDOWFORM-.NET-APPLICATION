@@ -44,7 +44,7 @@ namespace Sidekick_E_Invoicing
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
             // Draw a subtle border inside the rounded corners
-            using (Pen borderPen = new Pen(ColorTranslator.FromHtml("#E84B2B"), 3))
+            using (Pen borderPen = new Pen(ColorTranslator.FromHtml("#7bb06b"), 3))
             {
                 g.DrawRectangle(borderPen, 1, 1, this.Width - 3, this.Height - 3);
             }
@@ -61,7 +61,7 @@ namespace Sidekick_E_Invoicing
             }
 
             // Spinning accent arc
-            using (Pen fgPen = new Pen(ColorTranslator.FromHtml("#E84B2B"), 6))
+            using (Pen fgPen = new Pen(ColorTranslator.FromHtml("#7bb06b"), 6))
             {
                 fgPen.StartCap = LineCap.Round;
                 fgPen.EndCap = LineCap.Round;

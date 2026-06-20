@@ -55,7 +55,6 @@ namespace InvoiceApp
             mainContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 300)); // Left branding panel
             mainContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); // Right login form panel
             mainContainer.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            this.Controls.Add(mainContainer);
 
             // Left Branding Panel - Sidekick White
             leftPanel = new Panel()
@@ -108,7 +107,7 @@ namespace InvoiceApp
             {
                 Dock = DockStyle.Top,
                 Height = 6,
-                BackColor = ColorTranslator.FromHtml("#E84B2B")
+                BackColor = ColorTranslator.FromHtml("#7bb06b")
             };
 
             // =====================
@@ -159,16 +158,68 @@ namespace InvoiceApp
             };
 
             // =====================
-            // Spacer (Filler)
+            // Spacer (Filler) with features list to make it look premium
             // =====================
             var filler = new Panel()
             {
-                Dock = DockStyle.Fill
+                Dock = DockStyle.Fill,
+                BackColor = Color.White
             };
 
+            var pnlFeatures = new TableLayoutPanel()
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 4,
+                Padding = new Padding(35, 10, 20, 10),
+                BackColor = Color.White
+            };
+            pnlFeatures.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            pnlFeatures.RowStyles.Add(new RowStyle(SizeType.Absolute, 28)); // Title
+            pnlFeatures.RowStyles.Add(new RowStyle(SizeType.Absolute, 22)); // Bullet 1
+            pnlFeatures.RowStyles.Add(new RowStyle(SizeType.Absolute, 22)); // Bullet 2
+            pnlFeatures.RowStyles.Add(new RowStyle(SizeType.Absolute, 22)); // Bullet 3
+
+            var lblFeatureTitle = new Label()
+            {
+                Text = "Why Choose Sidekick?",
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = ColorTranslator.FromHtml("#1b6656"),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            var lblBullet1 = new Label()
+            {
+                Text = "✓ Seamless FBR Integration",
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
+                ForeColor = Color.DimGray,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            var lblBullet2 = new Label()
+            {
+                Text = "✓ Offline Invoice Generation",
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
+                ForeColor = Color.DimGray,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            var lblBullet3 = new Label()
+            {
+                Text = "✓ Secure Database Backups",
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
+                ForeColor = Color.DimGray,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            pnlFeatures.Controls.Add(lblFeatureTitle, 0, 0);
+            pnlFeatures.Controls.Add(lblBullet1, 0, 1);
+            pnlFeatures.Controls.Add(lblBullet2, 0, 2);
+            pnlFeatures.Controls.Add(lblBullet3, 0, 3);
+            filler.Controls.Add(pnlFeatures);
+
             // Add in clean docking order to prevent internal overlaps
-            leftPanel.Controls.Add(lblDev);       // DockBottom (very bottom)
-            leftPanel.Controls.Add(footerAccent); // DockBottom (sits right above lblDev)
             leftPanel.Controls.Add(topBar);       // DockTop (under logo)
             leftPanel.Controls.Add(picLogo);      // DockTop (under tagline)
             leftPanel.Controls.Add(lblTagline);   // DockTop (under top divider)
@@ -359,6 +410,11 @@ namespace InvoiceApp
                 centerLayout.Top = Math.Max(10, (rightPanel.ClientSize.Height - centerLayout.Height) / 2 - 35);
             };
 
+            // Add footer and mainContainer to Form controls to span full width
+            this.Controls.Add(mainContainer);
+            this.Controls.Add(footerAccent);
+            this.Controls.Add(lblDev);
+
             this.ResumeLayout(false);
         }
 
@@ -538,7 +594,7 @@ namespace InvoiceApp
             {
                 Dock = DockStyle.Top,
                 Height = 6,
-                BackColor = ColorTranslator.FromHtml("#E84B2B")
+                BackColor = ColorTranslator.FromHtml("#7bb06b")
             };
             this.Controls.Add(topBar);
 
