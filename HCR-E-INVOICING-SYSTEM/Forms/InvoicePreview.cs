@@ -1651,8 +1651,15 @@ public class InvoicePreviewForm : Form
                 }
 
 
+                // Center the computer generated invoice notice right under the Sales Tax Invoice banner
+                string cgText = "This is a computer generated invoice. No signature or stamp required.";
+                XSize cgSize = gfx.MeasureString(cgText, italicFont);
+                double cgX = margin + (printableWidth - cgSize.Width) / 2.0;
+                double cgY = bannerY + bannerH + 11;
+                gfx.DrawString(cgText, italicFont, grayBrush, cgX, cgY);
+
                 // Meta row: Date, Invoice number, FBR number, status
-                currentY = logoY + logoHeight + 10 + 26 + 1.5 + 12; // below banner + accent line
+                currentY = logoY + logoHeight + 10 + 26 + 1.5 + 20; // below banner + accent line + cg notice
                 gfx.DrawLine(new XPen(navyColor, 1.5), margin, currentY, margin + printableWidth, currentY);
                 currentY += 15;
 
@@ -1742,20 +1749,12 @@ public class InvoicePreviewForm : Form
                 if (footerTextX < margin) footerTextX = margin;
                 gfx.DrawString(pdfFooterText, smallFont, grayBrush, footerTextX, fTextY);
 
-                // Computer generated notice - centered
-                double cgY = fTextY + 14;
-                string cgText = "This is a computer generated invoice. No signature or stamp required.";
-                XSize cgSize = gfx.MeasureString(cgText, smallFont);
-                double cgX = margin + (printableWidth - cgSize.Width) / 2.0;
-                if (cgX < margin) cgX = margin;
-                gfx.DrawString(cgText, smallFont, grayBrush, cgX, cgY);
-
-                // Page number - right aligned
+                // Page number - right aligned (placed on the same row as the contact text)
                 if (pgTotal > 1)
                 {
                     string pageInfo = $"Page {pgIdx} of {pgTotal}";
                     XSize pgSize = gfx.MeasureString(pageInfo, smallFont);
-                    gfx.DrawString(pageInfo, smallFont, grayBrush, margin + printableWidth - pgSize.Width, cgY);
+                    gfx.DrawString(pageInfo, smallFont, grayBrush, margin + printableWidth - pgSize.Width, fTextY);
                 }
             };
             // Compat wrapper used by addPage (called before totalPages is known — page num added in 2nd pass)
