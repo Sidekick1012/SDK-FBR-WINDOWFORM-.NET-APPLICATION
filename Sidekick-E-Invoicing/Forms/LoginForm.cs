@@ -139,8 +139,8 @@ namespace InvoiceApp
             // =====================
             var lblDev = new Label()
             {
-                Text = "DEVELOPED BY SIDEKICK | © 2026",
-                Font = new Font("Segoe UI", 9, FontStyle.Regular),
+                Text = "DEVELOPED BY SIDEKICK | © 2025\r\n0300-0228444  •  info@sidekick.pk  •  www.sidekick.pk",
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
                 ForeColor = ColorTranslator.FromHtml("#1b6656"),
                 Dock = DockStyle.Bottom,
                 Height = 60,
