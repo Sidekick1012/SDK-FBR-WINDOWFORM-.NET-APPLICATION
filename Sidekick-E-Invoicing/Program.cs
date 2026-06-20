@@ -6,7 +6,7 @@ using System.Windows.Forms;
 using Sidekick_E_Invoicing.Helpers;
 using System.IO;
 
-namespace HCR_eInvoice
+namespace Sidekick_E_Invoicing
 {
     internal static class Program
     {
