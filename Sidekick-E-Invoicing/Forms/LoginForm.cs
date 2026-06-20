@@ -175,7 +175,8 @@ namespace InvoiceApp
                 Padding = new Padding(35, 15, 20, 10),
                 TextAlign = ContentAlignment.TopLeft,
                 BackColor = Color.Transparent,
-                AutoSize = false
+                AutoSize = false,
+                UseMnemonic = false
             };
             filler.Controls.Add(lblFeatures);
 
