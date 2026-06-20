@@ -174,7 +174,8 @@ namespace InvoiceApp
                 Dock = DockStyle.Fill,
                 Padding = new Padding(35, 15, 20, 10),
                 TextAlign = ContentAlignment.TopLeft,
-                BackColor = Color.White
+                BackColor = Color.Transparent,
+                AutoSize = false
             };
             filler.Controls.Add(lblFeatures);
 
