@@ -168,7 +168,7 @@ namespace InvoiceApp
 
             var lblFeatures = new Label()
             {
-                Text = "✓ Fast, Secure & Encrypted\r\n\r\n✓ Real-time FBR Integration\r\n\r\n✓ Automated Local Backups",
+                Text = "✓ Fast & Secure\r\n\r\n✓ Real-time FBR Integration\r\n\r\n✓ Automated Local Backups",
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
                 ForeColor = ColorTranslator.FromHtml("#1d4354"), // Brand dark blue
                 Dock = DockStyle.Fill,
