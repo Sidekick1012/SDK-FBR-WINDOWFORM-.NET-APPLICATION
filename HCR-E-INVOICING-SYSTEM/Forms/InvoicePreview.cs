@@ -49,7 +49,6 @@ public class InvoicePreviewForm : Form
     // Footer panel reference
     private Panel footerPanel;
     private Label footerTextLabel;
-    private Label computerGeneratedLabel;
 
     // For async operations
     private System.Windows.Forms.Timer loadTimer;
@@ -156,35 +155,6 @@ public class InvoicePreviewForm : Form
         mainPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         pnlInvoice.Controls.Add(mainPanel);
 
-        // ===== VERTICAL INVOICE TEXT =====
-        Label lblVerticalInvoice = new Label
-        {
-            Font = new Font("Segoe UI", 20, FontStyle.Bold),
-            ForeColor = Color.FromArgb(30, 60, 114),
-            AutoSize = false,
-            Width = 28,
-            Height = 330,
-            TextAlign = ContentAlignment.MiddleCenter,
-            Location = new Point(0, 200),
-            BackColor = Color.Transparent
-        };
-
-        lblVerticalInvoice.Paint += (s, e) =>
-        {
-            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            e.Graphics.TranslateTransform(0, lblVerticalInvoice.Height);
-            e.Graphics.RotateTransform(-90);
-
-            using (SolidBrush brush = new SolidBrush(lblVerticalInvoice.ForeColor))
-            {
-                e.Graphics.DrawString("SALES TAX INVOICE", lblVerticalInvoice.Font, brush, 0, 0);
-            }
-
-            e.Graphics.ResetTransform();
-        };
-        pnlInvoice.Controls.Add(lblVerticalInvoice);
-        lblVerticalInvoice.SendToBack(); // Keep behind DGV so first column is never hidden
-
         // ===== HEADER =====
         var headerTable = new TableLayoutPanel
         {
@@ -192,7 +162,8 @@ public class InvoicePreviewForm : Form
             ColumnCount = 2,
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            Height = 150
+            Height = 110,
+            Margin = new Padding(0, 0, 0, 10)
         };
         headerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
         headerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
@@ -202,47 +173,16 @@ public class InvoicePreviewForm : Form
             FlowDirection = FlowDirection.TopDown,
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            Height = 120
+            Height = 100
         };
         sellerlogo = new PictureBox
         {
             SizeMode = PictureBoxSizeMode.Zoom,
             Width = 250,
             Height = 90,
-            Margin = new Padding(0, 0, 0, 10)
+            Margin = new Padding(0, 0, 0, 0)
         };
         leftHeader.Controls.Add(sellerlogo);
-
-        lblInvoiceNumber = new Label
-        {
-            Font = new Font("Segoe UI", 14, FontStyle.Bold),
-            AutoSize = true,
-            Margin = new Padding(0, 0, 0, 5)
-        };
-        lblFbrNumber = new Label
-        {
-            Font = new Font("Segoe UI", 12),
-            AutoSize = true,
-            Margin = new Padding(0, 0, 0, 5)
-        };
-        lblDate = new Label
-        {
-            Font = new Font("Segoe UI", 12),
-            AutoSize = true,
-            Margin = new Padding(0, 0, 0, 5)
-        };
-        lblStatus = new Label
-        {
-            Font = new Font("Segoe UI", 12, FontStyle.Italic),
-            AutoSize = true,
-            ForeColor = Color.DarkGreen,
-            Margin = new Padding(0, 0, 0, 5)
-        };
-
-        leftHeader.Controls.Add(lblInvoiceNumber);
-        leftHeader.Controls.Add(lblFbrNumber);
-        leftHeader.Controls.Add(lblDate);
-        leftHeader.Controls.Add(lblStatus);
         headerTable.Controls.Add(leftHeader, 0, 0);
 
         FlowLayoutPanel rightHeader = new FlowLayoutPanel
@@ -250,20 +190,20 @@ public class InvoicePreviewForm : Form
             FlowDirection = FlowDirection.LeftToRight,
             AutoSize = true,
             RightToLeft = RightToLeft.Yes,
-            Height = 120
+            Height = 100
         };
         fbrLogo = new PictureBox
         {
             SizeMode = PictureBoxSizeMode.Zoom,
             Width = 100,
-            Height = 100,
+            Height = 90,
             Margin = new Padding(10, 0, 0, 0)
         };
         qrBox = new PictureBox
         {
             SizeMode = PictureBoxSizeMode.Zoom,
             Width = 100,
-            Height = 100,
+            Height = 90,
             Margin = new Padding(10, 0, 0, 0)
         };
         rightHeader.Controls.Add(fbrLogo);
@@ -272,47 +212,128 @@ public class InvoicePreviewForm : Form
 
         mainPanel.Controls.Add(headerTable);
 
-        // ===== TOP NOTICE (below FBR logo / QR) =====
-        var noticeRow = new TableLayoutPanel
+        // ===== SALES TAX INVOICE BANNER (Horizontal Navy Panel) =====
+        Panel bannerPanel = new Panel
+        {
+            Dock = DockStyle.Top,
+            Height = 32,
+            BackColor = Color.FromArgb(30, 60, 114), // Navy color
+            Margin = new Padding(0, 5, 0, 0)
+        };
+        Label lblBanner = new Label
+        {
+            Text = "SALES TAX INVOICE",
+            Font = new Font("Arial", 13f, FontStyle.Bold),
+            ForeColor = Color.White,
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleCenter,
+            UseMnemonic = false
+        };
+        bannerPanel.Controls.Add(lblBanner);
+        mainPanel.Controls.Add(bannerPanel);
+
+        // Gold/amber accent line below banner
+        Panel bannerAccent = new Panel
+        {
+            Dock = DockStyle.Top,
+            Height = 2,
+            BackColor = Color.FromArgb(200, 160, 40), // Gold/Amber color
+            Margin = new Padding(0, 0, 0, 5)
+        };
+        mainPanel.Controls.Add(bannerAccent);
+
+        // ===== COMPUTER GENERATED NOTICE (Centered under Banner) =====
+        Label lblCgNotice = new Label
+        {
+            Text = "This is a computer generated invoice. No signature or stamp required.",
+            Font = new Font("Segoe UI", 10.5f, FontStyle.Italic),
+            ForeColor = Color.FromArgb(100, 100, 100),
+            Dock = DockStyle.Top,
+            Height = 22,
+            TextAlign = ContentAlignment.MiddleCenter,
+            Margin = new Padding(0, 5, 0, 8),
+            UseMnemonic = false
+        };
+        mainPanel.Controls.Add(lblCgNotice);
+
+        // Metadata divider (Navy blue line)
+        Panel metadataDivider = new Panel
+        {
+            Dock = DockStyle.Top,
+            Height = 2,
+            BackColor = Color.FromArgb(30, 60, 114), // Navy
+            Margin = new Padding(0, 5, 0, 10)
+        };
+        mainPanel.Controls.Add(metadataDivider);
+
+        // Initialize metadata labels (to be positioned in columns)
+        lblInvoiceNumber = new Label
+        {
+            Font = new Font("Segoe UI", 12, FontStyle.Bold),
+            AutoSize = true,
+            Margin = new Padding(0, 2, 0, 2),
+            UseMnemonic = false
+        };
+        lblFbrNumber = new Label
+        {
+            Font = new Font("Segoe UI", 11),
+            AutoSize = true,
+            Margin = new Padding(0, 2, 0, 2),
+            UseMnemonic = false
+        };
+        lblDate = new Label
+        {
+            Font = new Font("Segoe UI", 11),
+            AutoSize = true,
+            Margin = new Padding(0, 2, 0, 2),
+            UseMnemonic = false
+        };
+        lblStatus = new Label
+        {
+            Font = new Font("Segoe UI", 11, FontStyle.Bold),
+            AutoSize = true,
+            ForeColor = Color.DarkGreen,
+            Margin = new Padding(0, 2, 0, 2),
+            UseMnemonic = false
+        };
+
+        // ===== METADATA PANEL (Two Columns) =====
+        var metadataTable = new TableLayoutPanel
         {
             Dock = DockStyle.Top,
             ColumnCount = 2,
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            Height = 30
+            Padding = new Padding(0, 5, 0, 10),
+            Height = 60
         };
-        noticeRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
-        // Let the right column auto-size to the notice so text won't wrap
-        noticeRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        metadataTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55));
+        metadataTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45));
 
-        // Empty spacer on the left to keep notice aligned with the right header column
-        var leftSpacer = new Label { AutoSize = true, Text = "", Dock = DockStyle.Fill };
-        var topNoticeLabel = new Label
+        FlowLayoutPanel metaLeft = new FlowLayoutPanel
         {
-            Text = "This is a computer generated invoice. No signature or stamp required.",
-            Font = new Font("Segoe UI", 10.5f, FontStyle.Italic),
-            ForeColor = Color.FromArgb(100, 100, 100),
+            FlowDirection = FlowDirection.TopDown,
             AutoSize = true,
-            Height = 24,
-            TextAlign = ContentAlignment.MiddleRight,
-            Dock = DockStyle.None,
-            Anchor = AnchorStyles.Right,
-            UseMnemonic = false
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Dock = DockStyle.Fill
         };
+        metaLeft.Controls.Add(lblInvoiceNumber);
+        metaLeft.Controls.Add(lblFbrNumber);
 
-        noticeRow.Controls.Add(leftSpacer, 0, 0);
-        noticeRow.Controls.Add(topNoticeLabel, 1, 0);
-        mainPanel.Controls.Add(noticeRow);
-
-        // Separator line
-        Panel separator1 = new Panel
+        FlowLayoutPanel metaRight = new FlowLayoutPanel
         {
-            Height = 2,
-            Dock = DockStyle.Top,
-            BackColor = Color.LightGray,
-            Margin = new Padding(0, 10, 0, 10)
+            FlowDirection = FlowDirection.TopDown,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Dock = DockStyle.Fill,
+            RightToLeft = RightToLeft.Yes // Align elements from the right side
         };
-        mainPanel.Controls.Add(separator1);
+        metaRight.Controls.Add(lblDate);
+        metaRight.Controls.Add(lblStatus);
+
+        metadataTable.Controls.Add(metaLeft, 0, 0);
+        metadataTable.Controls.Add(metaRight, 1, 0);
+        mainPanel.Controls.Add(metadataTable);
 
         // ===== SELLER / BUYER INFO PANEL =====
         var infoPanel = new TableLayoutPanel
@@ -513,21 +534,7 @@ public class InvoicePreviewForm : Form
 
         mainPanel.Controls.Add(totalsPanel);
 
-        // ===== COMPUTER GENERATED NOTICE (VISIBLE ON INVOICE) =====
-        computerGeneratedLabel = new Label
-        {
-            Text = "This is a computer generated invoice. No signature or stamp required.",
-            Font = new Font("Segoe UI", 10f, FontStyle.Italic),
-            ForeColor = Color.FromArgb(100, 100, 100),
-            AutoSize = false,
-            Height = 22,
-            TextAlign = ContentAlignment.MiddleCenter,
-            Dock = DockStyle.Top,
-            Margin = new Padding(0, 10, 0, 10),
-            UseMnemonic = false,
-            Visible = false // Hidden to avoid duplicate; top notice under FBR/QR is used instead
-        };
-        mainPanel.Controls.Add(computerGeneratedLabel);
+
 
         // ===== BOTTOM SPACER PANEL (FOR FOOTER SPACING) =====
         Panel bottomSpacerPanel = new Panel
@@ -573,21 +580,6 @@ public class InvoicePreviewForm : Form
         footerPanel.Controls.SetChildIndex(footerSeparator, 0);
 
         mainPanel.Controls.Add(footerPanel);
-
-        // ===== COMPUTER GENERATED LABEL =====
-         computerGeneratedLabel = new Label
-         {
-             // Ensure the exact requested wording is shown on the invoice
-             Text = "This is a computer generated invoice. No signature or stamp required.",
-             Font = new Font("Segoe UI", 10f, FontStyle.Italic),
-             ForeColor = Color.FromArgb(100, 100, 100),
-             Dock = DockStyle.Bottom,
-             Height = 40,
-             TextAlign = ContentAlignment.MiddleCenter,
-             UseMnemonic = false,
-             Visible = false // Keep bottom notice hidden so only top notice below FBR/QR is shown
-         };
-         pnlInvoice.Controls.Add(computerGeneratedLabel);
     }
 
     private void LoadInvoiceData()
@@ -638,9 +630,10 @@ public class InvoicePreviewForm : Form
             }
 
             // Set invoice details
-            lblInvoiceNumber.Text = $"Invoice #: {header["invoiceNumber"]}";
-            lblFbrNumber.Text = $"FBR Invoice #: {header["fbrInvoiceNumber"]}";
-            lblDate.Text = $"Date: {Convert.ToDateTime(header["invoiceDate"]):yyyy-MM-dd}";
+            lblInvoiceNumber.Text = $"Invoice Number: {header["invoiceNumber"]}";
+            lblFbrNumber.Text = $"FBR Invoice Number: {header["fbrInvoiceNumber"]}";
+            string dateStr = header["invoiceDate"] != DBNull.Value ? Convert.ToDateTime(header["invoiceDate"]).ToString("yyyy-MM-dd HH:mm") : "";
+            lblDate.Text = $"Invoice Date: {dateStr}";
 
             lblSellerInfo.Text = $"{header["sellerBusinessName"]}\nNTN/CNIC: {header["sellerNTNCNIC"]}\nProvince: {header["sellerProvince"]}\nAddress: {header["sellerAddress"]}";
             lblCustomerInfo.Text = $"{header["customerBusinessName"]}\nNTN/CNIC: {header["customerNTNCNIC"]}\nProvince: {header["customerProvince"]}\nAddress: {header["customerAddress"]}";
@@ -828,9 +821,9 @@ public class InvoicePreviewForm : Form
     {
         if (invoiceIsPaid)
         {
-            // Invoice is paid - sirf "Paid" show karen
-            lblStatus.Text = "Status: PAID ✓";
-            lblStatus.ForeColor = Color.DarkGreen;
+            // Invoice is paid
+            lblStatus.Text = "Payment Status: PAID";
+            lblStatus.ForeColor = Color.FromArgb(72, 187, 120);
 
             // Due Amount ko COMPLETELY HIDE karen
             HideDueAmountRow();
@@ -838,22 +831,19 @@ public class InvoicePreviewForm : Form
         else
         {
             // Invoice is unpaid
-            lblStatus.Text = "Status: UNPAID";
+            lblStatus.Text = "Payment Status: UNPAID";
+            lblStatus.ForeColor = Color.FromArgb(229, 62, 62);
 
             if (invoiceDueAmount > 0)
             {
                 // There is a due amount
                 lblStatus.Text += $" (Due: {invoiceDueAmount:N2})";
-                lblStatus.ForeColor = Color.Red;
 
                 // Show Due Amount row
                 ShowDueAmountRow(invoiceDueAmount);
             }
             else
             {
-                // No due amount
-                lblStatus.ForeColor = Color.OrangeRed;
-
                 // Show Due Amount as 0.00
                 ShowDueAmountRow(0m);
             }
