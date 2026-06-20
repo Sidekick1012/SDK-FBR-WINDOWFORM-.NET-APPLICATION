@@ -370,10 +370,10 @@ namespace InvoiceApp
                 centerLayout.Top = Math.Max(10, (rightPanel.ClientSize.Height - centerLayout.Height) / 2 - 35);
             };
 
-            // Add footer and mainContainer to Form controls to span full width
-            this.Controls.Add(mainContainer);
-            this.Controls.Add(footerAccent);
+            // Add footer and mainContainer to Form controls in correct Z-order for docking
             this.Controls.Add(lblDev);
+            this.Controls.Add(footerAccent);
+            this.Controls.Add(mainContainer);
 
             this.ResumeLayout(false);
         }
