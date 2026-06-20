@@ -179,12 +179,12 @@ namespace InvoiceApp
             };
             filler.Controls.Add(lblFeatures);
 
-            // Add in clean docking order to prevent internal overlaps
-            leftPanel.Controls.Add(topBar);       // DockTop (under logo)
-            leftPanel.Controls.Add(picLogo);      // DockTop (under tagline)
-            leftPanel.Controls.Add(lblTagline);   // DockTop (under top divider)
-            leftPanel.Controls.Add(divider);      // DockTop (very top)
-            leftPanel.Controls.Add(filler);       // DockFill (occupies remaining spacer)
+            // Add in correct Z-order docking to prevent overlaps and ensure features list is visible
+            leftPanel.Controls.Add(filler);       // DockFill (docked last, fills remaining bottom space)
+            leftPanel.Controls.Add(topBar);       // DockTop (placed below logo)
+            leftPanel.Controls.Add(picLogo);      // DockTop (placed below tagline)
+            leftPanel.Controls.Add(lblTagline);   // DockTop (placed below top divider)
+            leftPanel.Controls.Add(divider);      // DockTop (placed at the very top)
 
 
             // ===== RIGHT PANEL (Responsive Login Form) =====
