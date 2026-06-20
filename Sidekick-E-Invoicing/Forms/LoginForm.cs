@@ -141,10 +141,21 @@ namespace InvoiceApp
             {
                 Text = "DEVELOPED BY SIDEKICK | © 2025\r\n0300-0228444  •  info@sidekick.pk  •  www.sidekick.pk",
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
-                ForeColor = ColorTranslator.FromHtml("#1b6656"),
+                ForeColor = Color.White,
+                BackColor = ColorTranslator.FromHtml("#1b6656"), // Brand primary green
                 Dock = DockStyle.Bottom,
                 Height = 60,
                 TextAlign = ContentAlignment.MiddleCenter
+            };
+
+            // =====================
+            // Footer Top Accent Bar
+            // =====================
+            var footerAccent = new Panel()
+            {
+                Dock = DockStyle.Bottom,
+                Height = 4,
+                BackColor = ColorTranslator.FromHtml("#7bb06b") // Brand light green accent
             };
 
             // =====================
@@ -156,13 +167,13 @@ namespace InvoiceApp
             };
 
             // Add in clean docking order to prevent internal overlaps
-            leftPanel.Controls.Add(lblDev);      // DockBottom
-            leftPanel.Controls.Add(topBar);      // DockTop (very top)
-            leftPanel.Controls.Add(picLogo);     // DockTop (under topBar)
-            leftPanel.Controls.Add(lblChamber);  // DockTop (under picLogo)
-            leftPanel.Controls.Add(lblTagline);  // DockTop (under lblChamber)
-            leftPanel.Controls.Add(divider);     // DockTop (under lblTagline)
-            leftPanel.Controls.Add(filler);      // DockFill (occupies remaining spacer)
+            leftPanel.Controls.Add(lblDev);       // DockBottom (very bottom)
+            leftPanel.Controls.Add(footerAccent); // DockBottom (sits right above lblDev)
+            leftPanel.Controls.Add(topBar);       // DockTop (under logo)
+            leftPanel.Controls.Add(picLogo);      // DockTop (under tagline)
+            leftPanel.Controls.Add(lblTagline);   // DockTop (under top divider)
+            leftPanel.Controls.Add(divider);      // DockTop (very top)
+            leftPanel.Controls.Add(filler);       // DockFill (occupies remaining spacer)
 
 
             // ===== RIGHT PANEL (Responsive Login Form) =====
