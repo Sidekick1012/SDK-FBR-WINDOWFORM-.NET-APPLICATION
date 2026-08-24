@@ -249,6 +249,7 @@ public class GenerateInvoiceForm : Form
         cmbSroSchedule.Items.Add("327(I)/2008");
         cmbSroSchedule.Items.Add("1450(I)/2021");
         cmbSroSchedule.Items.Add("NINTH SCHEDULE");
+        cmbSroSchedule.Items.Add("FIFTH SCHEDULE");
         cmbSroSchedule.Items.Add("Goods (FED in ST Mode)");
         cmbSroSchedule.Items.Add("ICTO TABLE I");
         cmbSroSchedule.Items.Add("ICTO TABLE II");
@@ -259,9 +260,105 @@ public class GenerateInvoiceForm : Form
 
         cmbSroSchedule.SelectedIndex = 0;
 
-        // SRO item serial no dropdown (1..100)
+        // SRO item serial no dropdown (FBR SRO format)
         cmbSroItemSerialNo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 180 };
-        for (int i = 1; i <= 100; i++) cmbSroItemSerialNo.Items.Add(i.ToString());
+        cmbSroItemSerialNo.Items.Add(string.Empty);
+        cmbSroItemSerialNo.Items.Add("1");
+        cmbSroItemSerialNo.Items.Add("1(i)(i)");
+        cmbSroItemSerialNo.Items.Add("1(ii)(ii)(a)");
+        cmbSroItemSerialNo.Items.Add("1(i)(ii)");
+        cmbSroItemSerialNo.Items.Add("1(i)(iii)");
+        cmbSroItemSerialNo.Items.Add("1(i)(iv)");
+        cmbSroItemSerialNo.Items.Add("1(i)(v)");
+        cmbSroItemSerialNo.Items.Add("1(i)(vi)");
+        cmbSroItemSerialNo.Items.Add("1(i)(vii)");
+        cmbSroItemSerialNo.Items.Add("1(i)(viii)");
+        cmbSroItemSerialNo.Items.Add("1(i)(ix)");
+        cmbSroItemSerialNo.Items.Add("1(i)(x)");
+        cmbSroItemSerialNo.Items.Add("1(ii)");
+        cmbSroItemSerialNo.Items.Add("1(ii)(i)");
+        cmbSroItemSerialNo.Items.Add("1(ii)(ii)");
+        cmbSroItemSerialNo.Items.Add("1(iii)");
+        cmbSroItemSerialNo.Items.Add("1(iv)");
+        cmbSroItemSerialNo.Items.Add("1(v)");
+        cmbSroItemSerialNo.Items.Add("2");
+        cmbSroItemSerialNo.Items.Add("2(i)");
+        cmbSroItemSerialNo.Items.Add("2(ii)");
+        cmbSroItemSerialNo.Items.Add("2(iii)");
+        cmbSroItemSerialNo.Items.Add("2(iv)");
+        cmbSroItemSerialNo.Items.Add("3");
+        cmbSroItemSerialNo.Items.Add("3(i)");
+        cmbSroItemSerialNo.Items.Add("3(ii)");
+        cmbSroItemSerialNo.Items.Add("3(iii)");
+        cmbSroItemSerialNo.Items.Add("3(iv)");
+        cmbSroItemSerialNo.Items.Add("4");
+        cmbSroItemSerialNo.Items.Add("4(i)");
+        cmbSroItemSerialNo.Items.Add("4(ii)");
+        cmbSroItemSerialNo.Items.Add("4(iii)");
+        cmbSroItemSerialNo.Items.Add("5");
+        cmbSroItemSerialNo.Items.Add("5(i)");
+        cmbSroItemSerialNo.Items.Add("5(ii)");
+        cmbSroItemSerialNo.Items.Add("5(iii)");
+        cmbSroItemSerialNo.Items.Add("6");
+        cmbSroItemSerialNo.Items.Add("6(i)");
+        cmbSroItemSerialNo.Items.Add("6(ii)");
+        cmbSroItemSerialNo.Items.Add("7");
+        cmbSroItemSerialNo.Items.Add("7(i)");
+        cmbSroItemSerialNo.Items.Add("7(ii)");
+        cmbSroItemSerialNo.Items.Add("8");
+        cmbSroItemSerialNo.Items.Add("8(i)");
+        cmbSroItemSerialNo.Items.Add("8(ii)");
+        cmbSroItemSerialNo.Items.Add("9");
+        cmbSroItemSerialNo.Items.Add("9(i)");
+        cmbSroItemSerialNo.Items.Add("9(ii)");
+        cmbSroItemSerialNo.Items.Add("10");
+        cmbSroItemSerialNo.Items.Add("10(i)");
+        cmbSroItemSerialNo.Items.Add("10(ii)");
+        cmbSroItemSerialNo.Items.Add("11");
+        cmbSroItemSerialNo.Items.Add("11(i)");
+        cmbSroItemSerialNo.Items.Add("11(ii)");
+        cmbSroItemSerialNo.Items.Add("12");
+        cmbSroItemSerialNo.Items.Add("12(i)");
+        cmbSroItemSerialNo.Items.Add("12(ii)");
+        cmbSroItemSerialNo.Items.Add("13");
+        cmbSroItemSerialNo.Items.Add("13(i)");
+        cmbSroItemSerialNo.Items.Add("13(ii)");
+        cmbSroItemSerialNo.Items.Add("14");
+        cmbSroItemSerialNo.Items.Add("14(i)");
+        cmbSroItemSerialNo.Items.Add("14(ii)");
+        cmbSroItemSerialNo.Items.Add("15");
+        cmbSroItemSerialNo.Items.Add("15(i)");
+        cmbSroItemSerialNo.Items.Add("15(ii)");
+        cmbSroItemSerialNo.Items.Add("16");
+        cmbSroItemSerialNo.Items.Add("16(i)");
+        cmbSroItemSerialNo.Items.Add("16(ii)");
+        cmbSroItemSerialNo.Items.Add("17");
+        cmbSroItemSerialNo.Items.Add("17(i)");
+        cmbSroItemSerialNo.Items.Add("17(ii)");
+        cmbSroItemSerialNo.Items.Add("18");
+        cmbSroItemSerialNo.Items.Add("18(i)");
+        cmbSroItemSerialNo.Items.Add("18(ii)");
+        cmbSroItemSerialNo.Items.Add("19");
+        cmbSroItemSerialNo.Items.Add("19(i)");
+        cmbSroItemSerialNo.Items.Add("19(ii)");
+        cmbSroItemSerialNo.Items.Add("20");
+        cmbSroItemSerialNo.Items.Add("20(i)");
+        cmbSroItemSerialNo.Items.Add("20(ii)");
+        cmbSroItemSerialNo.Items.Add("21");
+        cmbSroItemSerialNo.Items.Add("22");
+        cmbSroItemSerialNo.Items.Add("23");
+        cmbSroItemSerialNo.Items.Add("24");
+        cmbSroItemSerialNo.Items.Add("25");
+        cmbSroItemSerialNo.Items.Add("26");
+        cmbSroItemSerialNo.Items.Add("27");
+        cmbSroItemSerialNo.Items.Add("28");
+        cmbSroItemSerialNo.Items.Add("29");
+        cmbSroItemSerialNo.Items.Add("30");
+        cmbSroItemSerialNo.Items.Add("31");
+        cmbSroItemSerialNo.Items.Add("32");
+        cmbSroItemSerialNo.Items.Add("33");
+        cmbSroItemSerialNo.Items.Add("34");
+        cmbSroItemSerialNo.Items.Add("35");
         cmbSroItemSerialNo.SelectedIndex = -1; // no default selection
 
         txtTotalValue = CreateTextBox();
@@ -1358,17 +1455,26 @@ public class GenerateInvoiceForm : Form
             decimal rate = 0m;
             decimal.TryParse(rateText.Replace("%", "").Trim(), out rate);
 
-            // If rate is not 18% ensure there's an SRO value; auto-fill with the example SRO values if missing
+            // If rate is not 18%, check the SRO field in the grid row.
+            // Do NOT auto-fill — respect user's manual dropdown selection.
+            // If the grid cell is empty but the user selected something in the
+            // SRO Schedule dropdown before adding the item, use that value.
             if (rate != 18m)
             {
                 string sro = row.Cells["sroScheduleNo"]?.Value?.ToString();
+                // Only apply the current dropdown value if the cell is empty
+                // and the user actually chose something (not the blank default).
                 if (string.IsNullOrWhiteSpace(sro))
                 {
-                    // default to the example schedule used in Postman
-                    row.Cells["sroScheduleNo"].Value = "EIGHTH SCHEDULE TABLE I";//"ICTO TABLE I";
+                    string dropdownVal = cmbSroSchedule?.Text ?? "";
+                    if (!string.IsNullOrWhiteSpace(dropdownVal))
+                    {
+                        row.Cells["sroScheduleNo"].Value = dropdownVal;
+                    }
+                    // Otherwise leave empty — do NOT force a default value
                 }
-             }
-             rowNo++;
+            }
+            rowNo++;
         }
 
         errorMessage = null;

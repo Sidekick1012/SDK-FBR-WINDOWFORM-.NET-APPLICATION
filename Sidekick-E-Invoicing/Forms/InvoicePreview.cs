@@ -111,13 +111,15 @@ public class InvoicePreviewForm : Form
             Font = new Font("Segoe UI", 11, FontStyle.Bold),
             Width = 180,
             Height = 38,
-            BackColor = Color.FromArgb(0, 102, 204),
+            BackColor = Color.FromArgb(27, 102, 86), // Sidekick brand primary mid-navy (#1b6656)
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat,
             Anchor = AnchorStyles.Top | AnchorStyles.Right,
             Location = new Point(this.ClientSize.Width - 210, 15)
         };
         btnPdf.FlatAppearance.BorderSize = 0;
+        btnPdf.MouseEnter += (s, e) => btnPdf.BackColor = Color.FromArgb(29, 67, 84); // Sidekick brand dark navy (#1d4354)
+        btnPdf.MouseLeave += (s, e) => btnPdf.BackColor = Color.FromArgb(27, 102, 86); // Sidekick brand primary mid-navy (#1b6656)
         btnPdf.Click += BtnPdf_Click;
         this.Controls.Add(btnPdf);
 
@@ -630,7 +632,8 @@ public class InvoicePreviewForm : Form
             }
 
             // Set invoice details
-            lblInvoiceNumber.Text = $"Invoice Number: {header["invoiceNumber"]}";
+            lblInvoiceNumber.Text = "";
+            lblInvoiceNumber.Visible = false;
             lblFbrNumber.Text = $"FBR Invoice Number: {header["fbrInvoiceNumber"]}";
             string dateStr = header["invoiceDate"] != DBNull.Value ? Convert.ToDateTime(header["invoiceDate"]).ToString("yyyy-MM-dd HH:mm") : "";
             lblDate.Text = $"Invoice Date: {dateStr}";
@@ -1461,13 +1464,19 @@ public class InvoicePreviewForm : Form
             DataRow header = ds.Tables["InvoiceHeader"].Rows[0];
             DataTable items = ds.Tables["InvoiceItems"];
 
-            // Colors
-            XColor navyColor = XColor.FromArgb(27, 102, 86);
+            // Sidekick Brand Colors
+            XColor sidekickNavyDark = XColor.FromArgb(29, 67, 84);      // #1d4354
+            XColor sidekickNavyMid = XColor.FromArgb(27, 102, 86);       // #1b6656
+            XColor sidekickAccentGold = XColor.FromArgb(123, 176, 107);  // #7bb06b
+            XColor sidekickBgPage = XColor.FromArgb(240, 242, 248);      // #F0F2F8
+
+            // Colors mapping to Sidekick scheme
+            XColor navyColor = sidekickNavyMid;
             XColor grayColor = XColor.FromArgb(74, 85, 104);
-            XColor lightBgColor = XColor.FromArgb(248, 250, 252);
-            XColor lightBorderColor = XColor.FromArgb(0, 0, 0);       // BLACK borders
-            XColor darkTextColor = XColor.FromArgb(45, 55, 72);
-            XColor lineSeparatorColor = XColor.FromArgb(0, 0, 0);      // BLACK separators
+            XColor lightBgColor = sidekickBgPage;
+            XColor lightBorderColor = XColor.FromArgb(210, 215, 235);    // Soft blue-gray border to match Sidekick theme (#D2D7EB)
+            XColor darkTextColor = sidekickNavyDark;
+            XColor lineSeparatorColor = XColor.FromArgb(210, 215, 235);   // Soft separator lines to match Sidekick theme
 
             XBrush navyBrush = new XSolidBrush(navyColor);
             XBrush grayBrush = new XSolidBrush(grayColor);
@@ -1512,10 +1521,9 @@ public class InvoicePreviewForm : Form
                 if (pageNum > 1)
                 {
                     gfx.DrawString("SALES TAX INVOICE", headingFont, navyBrush, margin, 40);
-                    gfx.DrawString($"Invoice #: {header["invoiceNumber"]}", regularFont, darkTextBrush, margin, 55);
-                    gfx.DrawString($"FBR Invoice #: {header["fbrInvoiceNumber"]}", regularFont, darkTextBrush, margin + 150, 55);
+                    gfx.DrawString($"FBR Invoice #: {header["fbrInvoiceNumber"]}", regularFont, darkTextBrush, margin, 55);
                     string invDateStr = header["invoiceDate"] != DBNull.Value ? Convert.ToDateTime(header["invoiceDate"]).ToString("yyyy-MM-dd") : "";
-                    gfx.DrawString($"Date: {invDateStr}", regularFont, darkTextBrush, margin + 350, 55);
+                    gfx.DrawString($"Date: {invDateStr}", regularFont, darkTextBrush, margin + 250, 55);
                     gfx.DrawLine(new XPen(navyColor, 1), margin, 68, margin + printableWidth, 68);
                     currentY = 80;
                     return;
@@ -1577,7 +1585,7 @@ public class InvoicePreviewForm : Form
                 gfx.DrawString("SALES TAX INVOICE", bannerFont, whiteBrush, bannerRect, XStringFormats.Center);
                 gfx.Restore(bannerClip);
                 // Thin gold/amber accent line below banner for extra flair
-                XPen accentPen = new XPen(XColor.FromArgb(123, 176, 107), 1.5);
+                XPen accentPen = new XPen(sidekickAccentGold, 1.5);
                 gfx.DrawLine(accentPen, margin, bannerY + bannerH, margin + printableWidth, bannerY + bannerH);
 
                 // Right side: FBR logo & QR code
@@ -1654,13 +1662,11 @@ public class InvoicePreviewForm : Form
                 currentY += 15;
 
                 // Two columns for meta data
-                gfx.DrawString($"Invoice Number: {header["invoiceNumber"]}", boldFont, darkTextBrush, margin, currentY);
+                gfx.DrawString($"FBR Invoice Number: {header["fbrInvoiceNumber"]}", boldFont, darkTextBrush, margin, currentY);
                 string dateStr = header["invoiceDate"] != DBNull.Value ? Convert.ToDateTime(header["invoiceDate"]).ToString("yyyy-MM-dd HH:mm") : "";
                 gfx.DrawString($"Invoice Date: {dateStr}", regularFont, darkTextBrush, margin + 280, currentY);
                 currentY += 14;
 
-                gfx.DrawString($"FBR Invoice Number: {header["fbrInvoiceNumber"]}", regularFont, darkTextBrush, margin, currentY);
-                
                 // Status colorized
                 string invoiceStatus = header["status"]?.ToString() ?? "Unpaid";
                 bool isPaid = invoiceStatus.Equals("Paid", StringComparison.OrdinalIgnoreCase);
@@ -1730,7 +1736,7 @@ public class InvoicePreviewForm : Form
                 if (gfx == null) return;
                 double fy = pageHeight - 72; // separator line Y
                 // Separator line
-                gfx.DrawLine(new XPen(XColor.FromArgb(180, 200, 220), 0.75), margin, fy, margin + printableWidth, fy);
+                gfx.DrawLine(linePen, margin, fy, margin + printableWidth, fy);
 
                 // Footer contact text - centered
                 double fTextY = fy + 10;

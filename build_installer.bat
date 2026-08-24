@@ -125,6 +125,7 @@ echo.
 
 :: Ensure einvoice.db exists so Inno Setup can package it
 if not exist "%PROJ_DIR%\bin\Release\einvoice.db" type nul > "%PROJ_DIR%\bin\Release\einvoice.db"
+copy /Y "%PROJ_DIR%\bin\Release\einvoice.db" "%PROJ_DIR%\bin\Release\einvoice_pkg.db" >nul 2>&1
 
 :: Ensure Logs folder and placeholder exist so Inno Setup doesn't fail
 if not exist "%PROJ_DIR%\bin\Release\Logs" mkdir "%PROJ_DIR%\bin\Release\Logs"
@@ -140,6 +141,7 @@ if exist "%LOCALAPPDATA%\Programs\Antigravity IDE\resources\app\node_modules\inn
 if "%ISCC_PATH%"=="" (
     echo [ERROR] Inno Setup compiler ISCC.exe not found!
     echo Please install Inno Setup 6 from: https://jrsoftware.org/issetup.php
+    del /Q "%PROJ_DIR%\bin\Release\einvoice_pkg.db" >nul 2>&1
     pause
     exit /b 1
 )
@@ -149,9 +151,12 @@ if "%ISCC_PATH%"=="" (
 if errorlevel 1 (
     echo.
     echo [ERROR] Installer compilation failed!
+    del /Q "%PROJ_DIR%\bin\Release\einvoice_pkg.db" >nul 2>&1
     pause
     exit /b %ERRORLEVEL%
 )
+
+del /Q "%PROJ_DIR%\bin\Release\einvoice_pkg.db" >nul 2>&1
 
 echo.
 echo ===================================================

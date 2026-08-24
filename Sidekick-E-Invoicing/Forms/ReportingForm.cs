@@ -272,7 +272,7 @@ ORDER BY substr(invoiceDate,1,10) DESC";
                     string sql = @"
 SELECT 
     i.invoiceId AS [invoiceId],
-    i.invoiceNumber AS [Invoice No],
+    i.fbrInvoiceNumber AS [FBR Invoice No],
     substr(i.invoiceDate,1,10) AS [Date],
     c.customerBusinessName AS [Customer],
     i.scenarioId AS [Scenario],
@@ -295,7 +295,7 @@ ORDER BY substr(i.invoiceDate,1,10) DESC";
                 {
                     string sql = @"
 SELECT 
-    i.invoiceNumber AS [Invoice No],
+    i.fbrInvoiceNumber AS [FBR Invoice No],
     substr(p.paymentDate,1,10) AS [Payment Date],
     p.method AS [Method],
     p.checkNo AS [Cheque/Account No],
@@ -557,7 +557,8 @@ LIMIT 50";
                     // Invoice Header Row
                     var invHeaderCell = sheet.Cells[rowIdx, 1, rowIdx, 10];
                     invHeaderCell.Merge = true;
-                    invHeaderCell.Value = $"🧾 Invoice No: {h["invoiceNumber"]}      [Status: {statusText} | {postText}]";
+                    string fbrNo = h["fbrInvoiceNumber"] != DBNull.Value && !string.IsNullOrWhiteSpace(h["fbrInvoiceNumber"].ToString()) ? h["fbrInvoiceNumber"].ToString() : "N/A";
+                    invHeaderCell.Value = $"🧾 FBR Invoice No: {fbrNo}      [Status: {statusText} | {postText}]";
                     invHeaderCell.Style.Font.Name = "Segoe UI";
                     invHeaderCell.Style.Font.Size = 12;
                     invHeaderCell.Style.Font.Bold = true;

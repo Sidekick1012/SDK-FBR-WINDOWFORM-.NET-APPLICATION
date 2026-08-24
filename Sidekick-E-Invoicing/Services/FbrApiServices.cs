@@ -301,8 +301,8 @@ public class FbrApiService
                 }
             }
 
-            /*For live*/ //var request = new HttpRequestMessage(HttpMethod.Post, "https://gw.fbr.gov.pk/di_data/v1/di/postinvoicedata");
-           var request = new HttpRequestMessage(HttpMethod.Post, "https://gw.fbr.gov.pk/di_data/v1/di/postinvoicedata_sb");
+            /*For live*/ var request = new HttpRequestMessage(HttpMethod.Post, "https://gw.fbr.gov.pk/di_data/v1/di/postinvoicedata");
+           //var request = new HttpRequestMessage(HttpMethod.Post, "https://gw.fbr.gov.pk/di_data/v1/di/postinvoicedata_sb");
 
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", sellerToken);
             request.Headers.Add("Cookie", "key=value; JSESSIONID=6dh2TLgZ6MNrzrPMw2tQonVWS6CdgRt-MgoupnKM.i01-irisdmz55; cookiesession1=678B2A2ED92C48287169612504B199D0");
@@ -390,8 +390,8 @@ public class FbrApiService
                 }
             }
 
-            /*For live*/ //var request = new HttpRequestMessage(HttpMethod.Post, "https://gw.fbr.gov.pk/di_data/v1/di/validateinvoicedata_sb");
-            var request = new HttpRequestMessage(HttpMethod.Post, "https://gw.fbr.gov.pk/di_data/v1/di/validateinvoicedata_sb");
+            /*For live*/ var request = new HttpRequestMessage(HttpMethod.Post, "https://gw.fbr.gov.pk/di_data/v1/di/validateinvoicedata");
+            //var request = new HttpRequestMessage(HttpMethod.Post, "https://gw.fbr.gov.pk/di_data/v1/di/validateinvoicedata_sb");
 
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", sellerToken);
             request.Headers.Add("Cookie", "key=value; JSESSIONID=6dh2TLgZ6MNrzrPMw2tQonVWS6CdgRt-MgoupnKM.i01-irisdmz55; cookiesession1=678B2A2ED92C48287169612504B199D0");

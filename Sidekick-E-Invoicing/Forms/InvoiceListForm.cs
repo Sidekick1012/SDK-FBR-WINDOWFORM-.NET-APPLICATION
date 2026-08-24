@@ -28,6 +28,10 @@ public class InvoiceViewerForm : Form
     private Label lblInvoiceNo;
     private TextBox txtInvoiceNo;
 
+    // Totals summary bar
+    private Panel pnlTotals;
+    private Label lblTotalSubTotal, lblTotalTax, lblTotalGrand, lblRecordCount;
+
     public InvoiceViewerForm()
     {
         InitializeComponent();
@@ -60,13 +64,14 @@ public class InvoiceViewerForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 4,
+            RowCount = 5,
             BackColor = Color.White
         };
         mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60)); // Header
         mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50)); // Invoice No quick search
         mainLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Filter + Buttons
         mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Grid
+        mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50)); // Totals bar
 
         // ===== HEADER =====
         var header = new Label
@@ -117,6 +122,10 @@ public class InvoiceViewerForm : Form
         // ===== DATAGRIDVIEW =====
         CreateDataGridView();
         mainLayout.Controls.Add(dgvInvoices, 0, 3);
+
+        // ===== TOTALS SUMMARY BAR =====
+        CreateTotalsPanel();
+        mainLayout.Controls.Add(pnlTotals, 0, 4);
 
         this.Controls.Add(mainLayout);
 
@@ -260,6 +269,72 @@ public class InvoiceViewerForm : Form
         dgvInvoices.DefaultCellStyle.SelectionForeColor = Color.White;
         dgvInvoices.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
         dgvInvoices.DefaultCellStyle.Padding = new Padding(5);
+    }
+
+    private void CreateTotalsPanel()
+    {
+        pnlTotals = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = ColorTranslator.FromHtml("#1b6656"),
+            Padding = new Padding(10, 0, 10, 0)
+        };
+
+        var totalsLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 5,
+            RowCount = 1,
+            BackColor = Color.Transparent
+        };
+        totalsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25)); // Record count
+        totalsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25)); // Sub Total
+        totalsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25)); // Total Tax
+        totalsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25)); // Grand Total
+        totalsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 0));  // spacer
+
+        lblRecordCount = new Label
+        {
+            Text = "Records: 0",
+            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            ForeColor = Color.FromArgb(200, 255, 220),
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+
+        lblTotalSubTotal = new Label
+        {
+            Text = "Sub Total: 0.00",
+            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            ForeColor = Color.White,
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+
+        lblTotalTax = new Label
+        {
+            Text = "Total Tax: 0.00",
+            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            ForeColor = Color.White,
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+
+        lblTotalGrand = new Label
+        {
+            Text = "Grand Total: 0.00",
+            Font = new Font("Segoe UI", 11, FontStyle.Bold),
+            ForeColor = ColorTranslator.FromHtml("#C8A84B"),
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleRight
+        };
+
+        totalsLayout.Controls.Add(lblRecordCount, 0, 0);
+        totalsLayout.Controls.Add(lblTotalSubTotal, 1, 0);
+        totalsLayout.Controls.Add(lblTotalTax, 2, 0);
+        totalsLayout.Controls.Add(lblTotalGrand, 3, 0);
+
+        pnlTotals.Controls.Add(totalsLayout);
     }
 
     private void InvoiceViewerForm_SizeChanged(object sender, EventArgs e)
@@ -410,7 +485,7 @@ public class InvoiceViewerForm : Form
         if (dgvInvoices.Columns.Count > 0)
         {
             dgvInvoices.Columns["invoiceId"].Width = 40;
-            dgvInvoices.Columns["invoiceNumber"].Width = 120;
+            dgvInvoices.Columns["customerName"].Width = 120;
             dgvInvoices.Columns["fbrInvoiceNumber"].Width = 130;
             dgvInvoices.Columns["invoiceDate"].Width = 80;
             dgvInvoices.Columns["subTotal"].Width = 80;
@@ -481,7 +556,7 @@ public class InvoiceViewerForm : Form
         var columns = new[]
         {
             new { Name = "invoiceId", Header = "ID", Width = 60, MinWidth = 40 },
-            new { Name = "invoiceNumber", Header = "Invoice Number", Width = 180, MinWidth = 120 },
+            new { Name = "customerName", Header = "Customer Name", Width = 180, MinWidth = 120 },
             new { Name = "fbrInvoiceNumber", Header = "FBR Invoice No.", Width = 200, MinWidth = 150 },
             new { Name = "invoiceDate", Header = "Date", Width = 100, MinWidth = 80 },
             new { Name = "subTotal", Header = "Sub Total", Width = 120, MinWidth = 90 },
@@ -591,7 +666,7 @@ public class InvoiceViewerForm : Form
             // === POPUP FORM ===
             Form infoForm = new Form
             {
-                Text = $"Invoice Details - {header["invoiceNumber"]}",
+                Text = $"Invoice Details - {header["customerBusinessName"]}",
                 Size = new Size(1000, 800),
                 //StartPosition = FormStartPosition.Manual,
                WindowState = FormWindowState.Maximized,
@@ -661,8 +736,7 @@ public class InvoiceViewerForm : Form
                 ForeColor = Color.Black,
                 Dock = DockStyle.Fill,
                 Text =
-    $@"Invoice No: {header["invoiceNumber"]}
-FBR Invoice No: {headerFbrInvoiceNo}
+    $@"FBR Invoice No: {headerFbrInvoiceNo}
 Date: {Convert.ToDateTime(header["invoiceDate"]):yyyy-MM-dd}
 Status: {(header.Table.Columns.Contains("postStatus") ? header["postStatus"] : "N/A")}
 Scenario ID: {scenario}
@@ -1067,7 +1141,7 @@ WHERE i.invoiceDate BETWEEN @startDate AND @endDate";
 
                         int rowIndex = dgvInvoices.Rows.Add(
                             dr["invoiceId"],
-                            dr["invoiceNumber"],
+                            dr["customerBusinessName"] == DBNull.Value ? "" : dr["customerBusinessName"],
                             dr["fbrInvoiceNumber"] == DBNull.Value ? "" : dr["fbrInvoiceNumber"],
                             Convert.ToDateTime(dr["invoiceDate"]).ToString("yyyy-MM-dd"),
                             Convert.ToDecimal(dr["subTotal"]),
@@ -1088,6 +1162,9 @@ WHERE i.invoiceDate BETWEEN @startDate AND @endDate";
                     }
 
                     currentInvoiceId = -1;
+
+                    // ===== UPDATE TOTALS BAR =====
+                    UpdateTotalsBar(dt);
                 }
             }
         }
@@ -1096,6 +1173,27 @@ WHERE i.invoiceDate BETWEEN @startDate AND @endDate";
             MessageBox.Show("Error loading invoices: " + ex.Message, "Error",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+    }
+
+    private void UpdateTotalsBar(DataTable dt)
+    {
+        if (pnlTotals == null) return;
+
+        decimal totalSubTotal = 0m;
+        decimal totalTax = 0m;
+        decimal totalGrand = 0m;
+
+        foreach (DataRow dr in dt.Rows)
+        {
+            if (dr["subTotal"] != DBNull.Value)  totalSubTotal += Convert.ToDecimal(dr["subTotal"]);
+            if (dr["totalTax"] != DBNull.Value)   totalTax      += Convert.ToDecimal(dr["totalTax"]);
+            if (dr["grandTotal"] != DBNull.Value) totalGrand    += Convert.ToDecimal(dr["grandTotal"]);
+        }
+
+        lblRecordCount.Text    = $"📋 Records: {dt.Rows.Count}";
+        lblTotalSubTotal.Text  = $"Sub Total:  {totalSubTotal:N2}";
+        lblTotalTax.Text       = $"Total Tax:  {totalTax:N2}";
+        lblTotalGrand.Text     = $"Grand Total:  {totalGrand:N2}";
     }
 
     // ===== PREVIEW =====

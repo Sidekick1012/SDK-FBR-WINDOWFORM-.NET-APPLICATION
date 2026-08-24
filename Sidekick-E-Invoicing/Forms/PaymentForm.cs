@@ -67,7 +67,7 @@ public class PaymentForm : Form
         infoPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
         infoPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
 
-        lblInvoiceNumber = MakeInfoLabel("📄 Invoice: -");
+        lblInvoiceNumber = MakeInfoLabel("👤 Customer: -");
         lblInvoiceDate   = MakeInfoLabel("📅 Date: -");
         lblInvoiceTotal  = MakeInfoLabel("💵 Total: -");
         lblInvoiceStatus = MakeInfoLabel("🔖 Status: -");
@@ -337,7 +337,7 @@ public class PaymentForm : Form
     {
         DataTable dt = DatabaseHelper.GetInvoices();
         cmbInvoices.DataSource = dt;
-        cmbInvoices.DisplayMember = "invoiceNumber";
+        cmbInvoices.DisplayMember = "displayText";
         cmbInvoices.ValueMember = "invoiceId";
         cmbInvoices.SelectedIndex = -1;
         ClearFields();
@@ -353,7 +353,7 @@ public class PaymentForm : Form
             LoadPayments(invoiceId);
 
             DataRow invoice = DatabaseHelper.GetInvoices().Select($"invoiceId={invoiceId}")[0];
-            lblInvoiceNumber.Text = $"📄 Invoice: {invoice["invoiceNumber"]}";
+            lblInvoiceNumber.Text = $"👤 Customer: {invoice["customerBusinessName"]}";
             lblInvoiceDate.Text   = $"📅 Date: {Convert.ToDateTime(invoice["invoiceDate"]).ToString("yyyy-MM-dd")}";
             lblInvoiceTotal.Text  = $"💵 Total: {Convert.ToDecimal(invoice["grandTotal"]).ToString("N2")} PKR";
             lblInvoiceStatus.Text = $"🔖 Status: {invoice["status"]}";
@@ -366,7 +366,7 @@ public class PaymentForm : Form
         {
             selectedInvoiceId = -1;
             dgvPayments.DataSource = null;
-            lblInvoiceNumber.Text = "📄 Invoice: -";
+            lblInvoiceNumber.Text = "👤 Customer: -";
             lblInvoiceDate.Text   = "📅 Date: -";
             lblInvoiceTotal.Text  = "💵 Total: -";
             lblInvoiceStatus.Text = "🔖 Status: -";

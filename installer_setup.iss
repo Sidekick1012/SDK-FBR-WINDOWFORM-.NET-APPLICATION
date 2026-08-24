@@ -44,7 +44,8 @@ Source: "{#ProjectDir}\Sidekick-E-Invoicing\bin\Release\Sidekick-E-Invoicing.exe
 Source: "{#ProjectDir}\Sidekick-E-Invoicing\bin\Release\Sidekick-E-Invoicing.exe.config"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Database - installed into AppData so seller data persists and is not overwritten on updates
-Source: "{#ProjectDir}\Sidekick-E-Invoicing\bin\Release\einvoice.db"; DestDir: "{userappdata}\SidekickEInvoicing"; Flags: ignoreversion onlyifdoesntexist
+Source: "{#ProjectDir}\Sidekick-E-Invoicing\bin\Release\einvoice_pkg.db"; DestName: "einvoice.db"; DestDir: "{userappdata}\SidekickEInvoicing"; Flags: ignoreversion onlyifdoesntexist
+Source: "{#ProjectDir}\Sidekick-E-Invoicing\bin\Release\einvoice_pkg.db"; DestName: "einvoice.db"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Logo and images
 Source: "{#ProjectDir}\Sidekick-E-Invoicing\bin\Release\*.png"; DestDir: "{app}"; Flags: ignoreversion

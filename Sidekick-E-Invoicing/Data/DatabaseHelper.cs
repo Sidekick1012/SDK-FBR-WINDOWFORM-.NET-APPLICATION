@@ -693,7 +693,7 @@ CREATE TABLE IF NOT EXISTS Payments (
             {
                 conn.Open();
                 string sql = @"
-SELECT i.invoiceId, i.invoiceNumber, i.invoiceDate, c.customerBusinessName, i.subTotal, i.totalTax, i.discount, i.grandTotal, i.status
+SELECT i.invoiceId, c.customerBusinessName || ' (' || substr(i.invoiceDate, 1, 10) || ')' AS displayText, i.invoiceNumber, i.invoiceDate, c.customerBusinessName, i.subTotal, i.totalTax, i.discount, i.grandTotal, i.status
 FROM Invoices i
 LEFT JOIN Customers c ON i.customerId = c.customerId
 ORDER BY i.invoiceDate DESC";
